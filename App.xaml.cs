@@ -65,6 +65,17 @@ namespace Nook
 
             if (e.Args.Contains("--uicheck")) _ = UiCheckAsync();
 
+            int ro = Array.IndexOf(e.Args, "--reorder");
+            if (ro >= 0 && ro + 2 < e.Args.Length)
+            {
+                var target = _manager.State.Drawers.FirstOrDefault(d => d.Name == e.Args[ro + 1]);
+                bool ok = target != null && _manager.MoveDrawer(target, int.Parse(e.Args[ro + 2]));
+                Log.Write($"reorder {e.Args[ro + 1]} {e.Args[ro + 2]}: ok={ok}");
+                Log.Write("order: " + string.Join(" | ", _manager.State.Drawers.Select(d => d.Name)));
+                Shutdown();
+                return;
+            }
+
             int pf = Array.IndexOf(e.Args, "--perf");
             if (pf >= 0 && pf + 1 < e.Args.Length) _ = PerfAsync(e.Args[pf + 1]);
 

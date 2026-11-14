@@ -166,6 +166,26 @@ namespace Nook
         }
 
         /// <summary>启动后补抓缺的图标快照：把 shell 查询从"每次展开"挪到"开机一次"。</summary>
+        /// <summary>在轨道上挪动一个抽屉。delta 为 -1 左移、+1 右移。</summary>
+        public bool MoveDrawer(DrawerData data, int delta)
+        {
+            int from = State.Drawers.IndexOf(data);
+            int to = from + delta;
+
+            if (from < 0 || to < 0 || to >= State.Drawers.Count) return false;
+
+            State.Drawers.RemoveAt(from);
+            State.Drawers.Insert(to, data);
+            Save();
+
+            Rail?.Rebuild();
+            Rail?.Reanchor(data);
+            Tray?.Rebuild();
+
+            Log.Write($"drawer moved: {data.Name} {from} -> {to}");
+            return true;
+        }
+
         public void ScheduleIconFill()
         {
             Task.Run(() =>

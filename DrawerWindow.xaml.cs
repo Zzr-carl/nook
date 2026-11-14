@@ -209,6 +209,28 @@ namespace Nook
             return (w, h);
         }
 
+        /// <summary>换位时把面板平移到新的刻度下方。</summary>
+        internal void GlideTo(double centerX)
+        {
+            var box = SystemParameters.WorkArea;
+            _anchorX = centerX;
+
+            double left = Math.Max(box.Left + 12, Math.Min(centerX - Width / 2, box.Right - 12 - Width));
+
+            var anim = new DoubleAnimation(Left, left, TimeSpan.FromMilliseconds(180))
+            {
+                EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
+            };
+
+            anim.Completed += (_, _) =>
+            {
+                BeginAnimation(LeftProperty, null);
+                Left = left;
+            };
+
+            BeginAnimation(LeftProperty, anim);
+        }
+
         /// <summary>图标大小变了之后，窗口要跟着重新量一遍，否则内容会被旧尺寸裁掉。</summary>
         private void ResizeToContent()
         {
@@ -770,6 +792,18 @@ namespace Nook
             var menu = NewMenu();
             menu.Items.Add(NewItem("重命名", BeginRename));
             menu.Items.Add(NewItem("添加程序…", AddViaDialog));
+            menu.Items.Add(new Separator { Style = (Style)FindResource("NookSeparator") });
+            int index = _manager.State.Drawers.IndexOf(_data);
+            int total = _manager.State.Drawers.Count;
+
+            var left = NewItem("在轨道上左移", () => _manager.MoveDrawer(_data, -1));
+            left.IsEnabled = index > 0;
+
+            var right = NewItem("在轨道上右移", () => _manager.MoveDrawer(_data, 1));
+            right.IsEnabled = index >= 0 && index < total - 1;
+
+            menu.Items.Add(left);
+            menu.Items.Add(right);
             menu.Items.Add(new Separator { Style = (Style)FindResource("NookSeparator") });
             menu.Items.Add(NewItem("新建抽屉", () => _manager.CreateDrawer()));
             menu.Items.Add(NewItem("删除此抽屉", ConfirmDelete));

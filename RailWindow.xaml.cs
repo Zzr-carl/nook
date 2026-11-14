@@ -108,6 +108,9 @@ namespace Nook
             Ticks.Children.Clear();
             _ticks.Clear();
 
+            _hoverIndex = -1;
+            _openIndex = -1;
+
             foreach (var drawer in _manager.State.Drawers)
             {
                 var tick = new Border
@@ -276,6 +279,18 @@ namespace Nook
             _open?.ClosePanelNow();
             _open = null;
             _openIndex = -1;
+        }
+
+        /// <summary>抽屉换位后，把正开着的面板移到新刻度下方。</summary>
+        public void Reanchor(DrawerData data)
+        {
+            if (_open == null) return;
+
+            int index = _manager.State.Drawers.IndexOf(data);
+            if (index < 0) { ClosePanelNow(); return; }
+
+            _openIndex = index;
+            _open.GlideTo(TickCenter(index));
         }
 
         public void CloseOpenPanel()
