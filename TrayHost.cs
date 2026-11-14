@@ -55,7 +55,7 @@ namespace Nook
         }
 
         /// <summary>主题色窗口单例：已开着就带到前台。</summary>
-        private void ShowAccentWindow()
+        public void ShowAccentWindow()
         {
             if (_accentWin == null || !_accentWin.IsLoaded)
                 _accentWin = new AccentWindow(_manager);

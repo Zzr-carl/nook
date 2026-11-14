@@ -89,6 +89,9 @@ namespace Nook
 
         private void HexBox_TextChanged(object sender, TextChangedEventArgs e)
         {
+            // XAML 解析阶段设置初始文本就会触发本事件，此刻控件字段还没赋值
+            if (HexBox == null || Preview == null) return;
+
             // 输入到 #RRGGBB 完整长度时实时预览，不用点应用
             var t = HexBox.Text.Trim();
             if (t.Length == 7 && t.StartsWith("#") && ParseHexOr(t, Colors.Transparent) != Colors.Transparent)

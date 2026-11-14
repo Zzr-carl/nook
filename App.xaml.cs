@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
+using System.Windows.Threading;
 using System.Windows.Media.Imaging;
 
 namespace Nook
@@ -99,6 +100,13 @@ namespace Nook
             if (e.Args.Contains("--selftest")) _ = SelfTestAsync();
 
             if (e.Args.Contains("--uicheck")) _ = UiCheckAsync();
+
+            if (e.Args.Contains("--accentwin"))
+            {
+                var t2 = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(600) };
+                t2.Tick += (_, _) => { t2.Stop(); _manager.Tray?.ShowAccentWindow(); };
+                t2.Start();
+            }
 
             int ac = Array.IndexOf(e.Args, "--accent");
             if (ac >= 0 && ac + 1 < e.Args.Length)
