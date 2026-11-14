@@ -6,8 +6,8 @@ using System.Windows.Threading;
 namespace Nook
 {
     /// <summary>
-    /// 检测前台窗口是否占满整个显示器（无边框全屏游戏）。
-    /// 命中时所有抽屉窗口让位，避免遮挡和误触。
+    /// 检测前台窗口是否占了屏幕顶部：独占全屏、无边框全屏、以及最大化窗口。
+    /// 命中时轨道和抽屉都让位，避免压住别人的标题栏或误触。
     /// </summary>
     internal sealed class FullscreenWatcher : IDisposable
     {
@@ -57,8 +57,12 @@ namespace Nook
             string name = cls.ToString();
             if (name is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Windows.UI.Core.CoreWindow") return false;
 
-            // 有标题栏的基本都是普通窗口（最大化也算窗口化，要出轨）
             int style = GetWindowLong(fg, GWL_STYLE);
+
+            // 最大化的窗口，标题栏正压在轨道位置上：让开
+            if ((style & WS_MAXIMIZE) != 0) return true;
+
+            // 有标题栏的普通窗口：轨道照常出现
             if ((style & WS_CAPTION) == WS_CAPTION) return false;
 
             // 二、无边框 + 铺满整块屏幕 = 全屏
@@ -101,6 +105,7 @@ namespace Nook
 
         private const int GWL_STYLE = -16;
         private const int WS_CAPTION = 0x00C00000;
+        private const int WS_MAXIMIZE = 0x01000000;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct RECT { public int Left, Top, Right, Bottom; }
