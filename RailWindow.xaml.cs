@@ -15,8 +15,8 @@ namespace Nook
     /// </summary>
     public partial class RailWindow : Window
     {
-        private const double BarHeight = 15;
-        private const double SlotWidth = 17;
+        private const double BarHeight = 18;
+        private const double SlotWidth = 26;
         private const double LeftPad = 12;
 
         private const int DwellMs = 550;
@@ -136,8 +136,8 @@ namespace Nook
             {
                 var tick = new Border
                 {
-                    Width = 3,
-                    Height = 9,
+                    Width = 4,
+                    Height = 11,
                     CornerRadius = new CornerRadius(0, 0, 1.5, 1.5),
                     Background = new SolidColorBrush(Color.FromArgb(0x38, 0xF4, 0xF5, 0xF7)),
                     HorizontalAlignment = HorizontalAlignment.Center,
@@ -166,6 +166,7 @@ namespace Nook
 
             double w = RailWidth;
             Width = w;
+            Height = BarHeight;
             Left = Work.Left + (Work.Width - w) / 2;
             if (!_revealed) Top = Work.Top - BarHeight;
         }
@@ -176,7 +177,7 @@ namespace Nook
             {
                 bool on = i == index || i == _openIndex;
 
-                _ticks[i].Height = on ? 15 : 9;
+                _ticks[i].Height = on ? 17 : 11;
                 _ticks[i].Background = on
                     ? new SolidColorBrush(Color.FromArgb(0xFF, 0xE9, 0xB8, 0x72))
                     : new SolidColorBrush(Color.FromArgb(0x38, 0xF4, 0xF5, 0xF7));
