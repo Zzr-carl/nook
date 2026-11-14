@@ -38,7 +38,11 @@ namespace Nook
 
         private DrawerWindow? _open;
 
+        private bool _pressed;
         private bool _dragging;
+        private System.Windows.Point _pressAt;
+        private DateTime _pressAtClock;
+        private int _pressIndex = -1;
         private int _dragFrom = -1;
         private int _dragTarget = -1;
 
@@ -58,7 +62,13 @@ namespace Nook
 
             MouseMove += Rail_MouseMove;
             MouseLeftButtonUp += Rail_MouseUp;
-            MouseLeave += (_, _) => { if (!_dragging) DragMarker.Visibility = Visibility.Collapsed; };
+            MouseLeave += (_, _) => { if (!_pressed) DragMarker.Visibility = Visibility.Collapsed; };
+            // 松手时系统会先收回捕获，此时不能清状态，否则 MouseUp 拿不到这次点击。
+            // 只有"还按着却丢了捕获"（切窗口等）才算中断。
+            LostMouseCapture += (_, _) =>
+            {
+                if (Mouse.LeftButton == MouseButtonState.Pressed) ResetDrag();
+            };
             SourceInitialized += (_, _) => WindowStyleHelper.HideFromAltTab(this);
         }
 
@@ -144,7 +154,7 @@ namespace Nook
                 };
 
                 int slot = _ticks.Count;
-                cell.MouseLeftButtonDown += (_, e) => BeginTickDrag(slot, e);
+                cell.MouseLeftButtonDown += (_, e) => BeginTickPress(slot, e);
 
                 Ticks.Children.Add(cell);
                 _ticks.Add(tick);
@@ -182,8 +192,13 @@ namespace Nook
                 return;
             }
 
-            if (_dragging)
+            if (_pressed || _dragging)
             {
+                // 松手事件万一丢了，不能把状态卡死在这里。
+                // 400ms 缓冲：正常松手的 MouseUp 早已到达，不会和它抢。
+                if (Mouse.LeftButton == MouseButtonState.Released &&
+                    (DateTime.Now - _pressAtClock).TotalMilliseconds > 400) ResetDrag();
+
                 _leaveSince = DateTime.MinValue;
                 return;
             }
@@ -311,31 +326,45 @@ namespace Nook
             _openIndex = -1;
         }
 
-        // ==================== 拖动排序 ====================
+        // ==================== 点击 / 拖动排序 ====================
 
-        private void BeginTickDrag(int index, MouseButtonEventArgs e)
+        private void BeginTickPress(int index, MouseButtonEventArgs e)
         {
-            if (_manager.State.Drawers.Count < 2) return;
+            if (_manager.State.Drawers.Count == 0) return;
 
-            Log.Write($"drag begin idx={index}");
-            _dragging = true;
-            _dragFrom = index;
-            _dragTarget = index;
+            _pressed = true;
+            _pressIndex = index;
+            _pressAt = e.GetPosition(this);
+            _pressAtClock = DateTime.Now;
 
-            ClosePanelNow();
             CaptureMouse();
-            ShowMarker(index);
-
             e.Handled = true;
         }
 
         private void Rail_MouseMove(object sender, MouseEventArgs e)
         {
-            if (!_dragging || !IsMouseCaptured) return;
+            if (!_pressed) return;
 
-            double screenX = Left + e.GetPosition(this).X;
-            int target = Math.Clamp(IndexAt(screenX), 0, _manager.State.Drawers.Count - 1);
+            var p = e.GetPosition(this);
 
+            if (!_dragging)
+            {
+                // 按下瞬间可能收到"上一个位置"的残留移动事件，先挡掉 120ms
+                if ((DateTime.Now - _pressAtClock).TotalMilliseconds < 120) return;
+
+                // 动过 5px 才算拖，否则一直等松手，当点击处理
+                if (Math.Abs(p.X - _pressAt.X) < 5) return;
+
+                _dragging = true;
+                _dragFrom = _pressIndex;
+                _dragTarget = _pressIndex;
+
+                ClosePanelNow();
+                ShowMarker(_dragFrom);
+                Log.Write($"drag begin idx={_dragFrom} dx={p.X - _pressAt.X:F1} pressX={_pressAt.X:F1} nowX={p.X:F1}");
+            }
+
+            int target = Math.Clamp(IndexAt(Left + p.X), 0, _manager.State.Drawers.Count - 1);
             if (target == _dragTarget) return;
 
             _dragTarget = target;
@@ -344,24 +373,44 @@ namespace Nook
 
         private void Rail_MouseUp(object sender, MouseButtonEventArgs e)
         {
-            if (!_dragging) return;
+            Log.Write($"mouseup pressed={_pressed} dragging={_dragging} pressIdx={_pressIndex}");
 
+            if (!_pressed) return;
+
+            bool wasDragging = _dragging;
             int from = _dragFrom;
             int to = _dragTarget;
-            Log.Write($"drag end {from}->{to}");
+            int clicked = _pressIndex;
 
-            _dragging = false;
-            _dragFrom = _dragTarget = -1;
-            ReleaseMouseCapture();
-            DragMarker.Visibility = Visibility.Collapsed;
-
-            if (from >= 0 && to >= 0 && from != to)
-            {
-                var data = _manager.State.Drawers[from];
-                _manager.MoveDrawer(data, to - from);
-            }
-
+            ResetDrag();
             e.Handled = true;
+
+            if (wasDragging)
+            {
+                Log.Write($"drag end {from}->{to}");
+
+                if (from >= 0 && to >= 0 && from != to &&
+                    from < _manager.State.Drawers.Count)
+                {
+                    _manager.MoveDrawer(_manager.State.Drawers[from], to - from);
+                }
+            }
+            else if (clicked >= 0 && clicked < _manager.State.Drawers.Count)
+            {
+                // 没拖动 = 单击，直接展开这个抽屉
+                OpenIndex(clicked);
+            }
+        }
+
+        private void ResetDrag()
+        {
+            _pressed = false;
+            _dragging = false;
+            _pressIndex = -1;
+            _dragFrom = _dragTarget = -1;
+
+            if (IsMouseCaptured) ReleaseMouseCapture();
+            DragMarker.Visibility = Visibility.Collapsed;
         }
 
         private void ShowMarker(int index)
