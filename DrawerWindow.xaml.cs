@@ -37,6 +37,7 @@ namespace Nook
         private bool _draggingOut;
         private bool _internalDrop;
         private DateTime _dragEndedAt = DateTime.MinValue;
+        private DispatcherTimer? _glassWatch;
 
         public DrawerWindow(DrawerData data, DrawerManager manager)
         {
@@ -180,6 +181,23 @@ namespace Nook
             Top = -6000;
 
             ApplyTopmost();
+
+            SourceInitialized += (_, _) =>
+            {
+                var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+                Log.Write("exclude from capture: " + Native.HideFromCapture(hwnd));
+            };
+
+            // 开着的时候持续刷新背景，桌面变了玻璃也跟着变
+            if (_glassWatch == null)
+            {
+                _glassWatch = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
+                _glassWatch.Tick += (_, _) =>
+                {
+                    if (!_expanded) return;
+                    CaptureBackdropNow();
+                };
+            }
         }
 
         /// <summary>锚定的刻度中心：换图标大小后仍对齐同一根刻度。</summary>
@@ -269,14 +287,14 @@ namespace Nook
             Width = w;
             Height = h;
 
-            _opening = true;
-            Show();
-            UpdateLayout();
-            await Task.Delay(28);
-
+            // 先抓背景再显示窗口：窗口一显示，抓到的就是它自己（或正在消失的预览卡）
             var clock2 = System.Diagnostics.Stopwatch.StartNew();
             CaptureBackdropNow();
             Log.Write($"backdrop: {_data.Name} {clock2.ElapsedMilliseconds}ms");
+
+            _opening = true;
+            Show();
+            UpdateLayout();
 
             _expanded = true;
             _opening = false;
@@ -288,6 +306,8 @@ namespace Nook
 
             var geo = new RectangleGeometry(new Rect(0, 0, w, 0));
             RootGrid.Clip = geo;
+
+            _glassWatch?.Start();
 
             // 图标和动画并行：命中缓存的已经贴上了，未命中的在这 300ms 里补完
             var icons = LoadIconsAsync();

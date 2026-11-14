@@ -77,6 +77,18 @@ namespace Nook
         [DllImport("user32.dll")]
         public static extern short GetAsyncKeyState(int vKey);
 
+        private const uint WDA_EXCLUDEFROMCAPTURE = 0x00000011;
+
+        /// <summary>把窗口从截屏里排除：自己抓自己背景时就不会拍到面板本身。</summary>
+        public static bool HideFromCapture(IntPtr hwnd)
+        {
+            try { return SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE); }
+            catch { return false; }
+        }
+
+        [DllImport("user32.dll")]
+        private static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
+
         [DllImport("user32.dll")]
         public static extern bool SetForegroundWindow(IntPtr hWnd);
     }

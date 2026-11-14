@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -331,6 +332,10 @@ namespace Nook
             var window = _manager.GetOrCreatePanel(data);
 
             HideHint();
+
+            // 预览卡是独立窗口，系统合成要一两帧才真正消失；
+            // 不等这一下，它会被抓进面板背景里，看起来就是一块方形错乱。
+            await Task.Delay(70);
 
             _open = window;
             _openIndex = index;

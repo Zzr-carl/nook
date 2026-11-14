@@ -39,6 +39,20 @@ namespace Nook
                     g.DrawImage(full, new Rectangle(0, 0, sw, sh));
                 }
 
+                // 全黑说明这次没抓到真实画面（窗口排除截屏时可能出现），交给上层保留旧图
+                long sum = 0;
+                int samples = 0;
+
+                for (int sy = 0; sy < sh; sy += 3)
+                    for (int sx = 0; sx < sw; sx += 3)
+                    {
+                        var c = small.GetPixel(sx, sy);
+                        sum += c.R + c.G + c.B;
+                        samples++;
+                    }
+
+                if (samples > 0 && sum / (3.0 * samples) < 8) return null;
+
                 Blur(small, 7, 3);
                 Desaturate(small, 0.18f);
 
