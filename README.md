@@ -75,3 +75,7 @@ Nook.exe --autostart on|off
 ## 字体
 
 界面字体为 [Sora](https://github.com/sora-xor/sora-font) 与 [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono)，均为 SIL Open Font License 1.1，许可证见 `Assets/Fonts/licenses/`。
+
+## 许可证
+
+[MIT](LICENSE)

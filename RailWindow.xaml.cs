@@ -326,6 +326,23 @@ namespace Nook
 
         public void ShowRail() => Reveal();
 
+        /// <summary>已经在运行时被再次启动：给出可见回应，而不是悄无声息。</summary>
+        public void Pulse()
+        {
+            Reveal();
+
+            foreach (var tick in _ticks)
+                tick.Background = new SolidColorBrush(Color.FromArgb(0xFF, 0xE9, 0xB8, 0x72));
+
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(650) };
+            timer.Tick += (_, _) =>
+            {
+                timer.Stop();
+                Highlight(_hoverIndex);
+            };
+            timer.Start();
+        }
+
         /// <summary>切换常驻后立即生效。</summary>
         public void ApplyAlwaysVisible()
         {

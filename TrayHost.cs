@@ -185,6 +185,8 @@ namespace Nook
                    done ? WinForms.ToolTipIcon.Info : WinForms.ToolTipIcon.Error);
         }
 
+        public void Say(string text) => Notify(text, WinForms.ToolTipIcon.Info);
+
         private void Notify(string text, WinForms.ToolTipIcon icon)
         {
             try

@@ -14,6 +14,7 @@ namespace Nook
         public static bool HoverToOpen { get; set; } = true;
 
         private Mutex? _mutex;
+        private EventWaitHandle? _activate;
         private DrawerManager? _manager;
         private TrayHost? _tray;
 
@@ -22,9 +23,23 @@ namespace Nook
             _mutex = new Mutex(true, "Nook.SingleInstance.v1", out bool isFirst);
             if (!isFirst)
             {
+                // 已经有实例在跑：把它叫醒，别让用户对着"双击没反应"发愣
+                try
+                {
+                    if (EventWaitHandle.TryOpenExisting("Nook.Activate.v1", out var ev))
+                    {
+                        ev.Set();
+                        ev.Dispose();
+                    }
+                }
+                catch { }
+
                 Shutdown();
                 return;
             }
+
+            _activate = new EventWaitHandle(false, EventResetMode.AutoReset, "Nook.Activate.v1");
+            ListenForActivate();
 
             base.OnStartup(e);
 
@@ -83,6 +98,30 @@ namespace Nook
 
             int di = Array.IndexOf(e.Args, "--icondiag");
             if (di >= 0 && di + 1 < e.Args.Length) _ = IconDiagAsync(e.Args[di + 1]);
+        }
+
+        /// <summary>等第二个实例来敲门：闪一下轨 + 托盘气泡，告诉用户它在哪。</summary>
+        private void ListenForActivate()
+        {
+            var thread = new Thread(() =>
+            {
+                while (true)
+                {
+                    try { _activate?.WaitOne(); }
+                    catch { return; }
+
+                    Log.Write("activate: 已有实例，唤出轨并提示");
+
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        _manager?.Rail?.Pulse();
+                        _tray?.Say("Nook 已经在运行，把鼠标移到屏幕最顶端就能拉下抽屉。");
+                    }));
+                }
+            })
+            { IsBackground = true, Name = "Nook.Activate" };
+
+            thread.Start();
         }
 
         // 不靠鼠标，直接驱动"展开 → 锚定 → 收回"，把几何数据打到日志里
