@@ -20,7 +20,8 @@ namespace Nook
 
         public FullscreenWatcher()
         {
-            _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
+            // 250ms 一次：进出全屏要跟得上，游戏里手一滑碰到顶边就被误开更糟
+            _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
             _timer.Tick += (_, _) => Poll();
             _timer.Start();
         }
@@ -39,6 +40,11 @@ namespace Nook
 
         private static bool Detect()
         {
+            // 一、系统告诉我们有独占全屏（游戏最可靠的一条）
+            if (SHQueryUserNotificationState(out int quns) == 0 &&
+                quns is QUNS_BUSY or QUNS_D3D_FULL_SCREEN or QUNS_PRESENTATION)
+                return true;
+
             IntPtr fg = GetForegroundWindow();
             if (fg == IntPtr.Zero) return false;
 
@@ -51,13 +57,13 @@ namespace Nook
             string name = cls.ToString();
             if (name is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Windows.UI.Core.CoreWindow") return false;
 
-            // 有标题栏或处于最大化状态的，都不是独占全屏
-            // （任务栏自动隐藏时，最大化窗口的矩形也会盖满整块屏幕，只靠矩形判断会误判）
+            // 有标题栏的基本都是普通窗口（最大化也算窗口化，要出轨）
             int style = GetWindowLong(fg, GWL_STYLE);
-            if ((style & WS_MAXIMIZE) != 0) return false;
             if ((style & WS_CAPTION) == WS_CAPTION) return false;
 
-            if (!GetWindowRect(fg, out RECT wr)) return false;
+            // 二、无边框 + 铺满整块屏幕 = 全屏
+            // 用 DWM 的真实可见边界；GetWindowRect 会把不可见的缩放边也算进去
+            if (!GetVisibleRect(fg, out RECT wr)) return false;
 
             IntPtr mon = MonitorFromWindow(fg, MONITOR_DEFAULTTONEAREST);
             var mi = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
@@ -69,12 +75,31 @@ namespace Nook
                 && wr.Right >= mr.Right && wr.Bottom >= mr.Bottom;
         }
 
+        private static bool GetVisibleRect(IntPtr hwnd, out RECT rect)
+        {
+            if (DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS,
+                    out rect, Marshal.SizeOf<RECT>()) == 0)
+                return true;
+
+            return GetWindowRect(hwnd, out rect);
+        }
+
         public void Dispose() => _timer.Stop();
+
+        private const int QUNS_BUSY = 2;
+        private const int QUNS_D3D_FULL_SCREEN = 3;
+        private const int QUNS_PRESENTATION = 4;
+        private const int DWMWA_EXTENDED_FRAME_BOUNDS = 9;
+
+        [DllImport("shell32.dll")]
+        private static extern int SHQueryUserNotificationState(out int state);
+
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmGetWindowAttribute(IntPtr hwnd, int attr, out RECT value, int size);
 
         private const uint MONITOR_DEFAULTTONEAREST = 2;
 
         private const int GWL_STYLE = -16;
-        private const int WS_MAXIMIZE = 0x01000000;
         private const int WS_CAPTION = 0x00C00000;
 
         [StructLayout(LayoutKind.Sequential)]

@@ -506,6 +506,7 @@ namespace Nook
             if (!fullscreen) return;
 
             HideRail(true);
+            HideHint();
             ClosePanelNow();
         }
 
