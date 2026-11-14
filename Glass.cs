@@ -15,8 +15,11 @@ namespace Nook
     /// </summary>
     internal static class Glass
     {
-        public static BitmapSource? Capture(int x, int y, int w, int h)
+        public static BitmapSource? Capture(int x, int y, int w, int h) => Capture(x, y, w, h, out _);
+
+        public static BitmapSource? Capture(int x, int y, int w, int h, out int signature)
         {
+            signature = 0;
             if (w <= 0 || h <= 0) return null;
 
             try
@@ -52,6 +55,9 @@ namespace Nook
                     }
 
                 if (samples > 0 && sum / (3.0 * samples) < 8) return null;
+
+                // 顺便算个指纹：画面没变就不用重新贴背景
+                signature = (int)(sum % int.MaxValue) ^ (samples * 31);
 
                 Blur(small, 7, 3);
                 Desaturate(small, 0.18f);

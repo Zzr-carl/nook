@@ -191,12 +191,8 @@ namespace Nook
             // 开着的时候持续刷新背景，桌面变了玻璃也跟着变
             if (_glassWatch == null)
             {
-                _glassWatch = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(700) };
-                _glassWatch.Tick += (_, _) =>
-                {
-                    if (!_expanded) return;
-                    CaptureBackdropNow();
-                };
+                _glassWatch = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(110) };
+                _glassWatch.Tick += (_, _) => RefreshGlassAsync();
             }
         }
 
@@ -368,10 +364,55 @@ namespace Nook
             return tcs.Task;
         }
 
+        private int _glassSignature;
+
         private void CaptureBackdropNow()
         {
-            var shot = Glass.Capture(PixelX(), PixelY(), PixelW(), PixelH());
-            if (shot != null) Backdrop.Source = shot;
+            int x = PixelX(), y = PixelY(), w = PixelW(), h = PixelH();
+
+            var shot = Glass.Capture(x, y, w, h, out int sig);
+            if (shot == null) return;
+
+            if (sig == _glassSignature) return;   // 桌面没动静，别白贴一张
+
+            _glassSignature = sig;
+            Backdrop.Source = shot;
+        }
+
+        private bool _glassBusy;
+        private int _glassSamples;
+
+        /// <summary>抓屏和模糊丢到后台线程，别占 UI 线程；结果回 UI 线程贴图。</summary>
+        private async void RefreshGlassAsync()
+        {
+            if (!_expanded || _glassBusy || !IsVisible) return;
+
+            _glassBusy = true;
+            try
+            {
+                int x = PixelX(), y = PixelY(), w = PixelW(), h = PixelH();
+
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                var result = await Task.Run(() =>
+                {
+                    var img = Glass.Capture(x, y, w, h, out int sig);
+                    return (img, sig);
+                });
+                sw.Stop();
+
+                // 按单次耗时自动调间隔：太快会吃 CPU，太慢会看出延迟
+                int ms = (int)Math.Clamp(sw.ElapsedMilliseconds * 4, 45, 260);
+                if (_glassWatch != null && Math.Abs(_glassWatch.Interval.TotalMilliseconds - ms) > 20)
+                    _glassWatch.Interval = TimeSpan.FromMilliseconds(ms);
+
+                if (result.img != null && _expanded && result.sig != _glassSignature)
+                {
+                    _glassSignature = result.sig;
+                    Backdrop.Source = result.img;
+                }
+            }
+            catch { }
+            finally { _glassBusy = false; }
         }
 
         private void UpdateClip()
