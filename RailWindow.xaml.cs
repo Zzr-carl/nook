@@ -101,7 +101,7 @@ namespace Nook
         {
             if (_revealed) return;
             _revealed = true;
-            MoveTo(Work.Top, 190);
+            MoveTo(Work.Top, 100);
         }
 
         private bool AlwaysVisible => _manager.State.RailAlwaysVisible;
@@ -210,7 +210,7 @@ namespace Nook
 
         // ==================== 主循环 ====================
 
-        private const int PeekDwellMs = 420;
+        private const int PeekDwellMs = 80;
 
         private void Poll()
         {

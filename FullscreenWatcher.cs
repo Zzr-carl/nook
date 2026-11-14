@@ -33,7 +33,7 @@ namespace Nook
         public FullscreenWatcher()
         {
             // 250ms 一次：进出全屏要跟得上，游戏里手一滑碰到顶边就被误开更糟
-            _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+            _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(140) };
             _timer.Tick += (_, _) => Poll();
             _timer.Start();
         }
