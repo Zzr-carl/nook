@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Input;
 using System.Windows.Threading;
 
 namespace Nook
@@ -37,6 +38,10 @@ namespace Nook
 
         private DrawerWindow? _open;
 
+        private bool _dragging;
+        private int _dragFrom = -1;
+        private int _dragTarget = -1;
+
         public RailWindow(DrawerManager manager)
         {
             _manager = manager;
@@ -50,6 +55,10 @@ namespace Nook
             _poll.Tick += (_, _) => Poll();
 
             Loaded += (_, _) => { Rebuild(); PlaceHidden(); _poll.Start(); Reveal(); };
+
+            MouseMove += Rail_MouseMove;
+            MouseLeftButtonUp += Rail_MouseUp;
+            MouseLeave += (_, _) => { if (!_dragging) DragMarker.Visibility = Visibility.Collapsed; };
             SourceInitialized += (_, _) => WindowStyleHelper.HideFromAltTab(this);
         }
 
@@ -117,12 +126,27 @@ namespace Nook
                 {
                     Width = 3,
                     Height = 9,
-                    Margin = new Thickness(7, 0, 7, 0),
                     CornerRadius = new CornerRadius(0, 0, 1.5, 1.5),
-                    Background = new SolidColorBrush(Color.FromArgb(0x38, 0xF4, 0xF5, 0xF7))
+                    Background = new SolidColorBrush(Color.FromArgb(0x38, 0xF4, 0xF5, 0xF7)),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Top,
+                    IsHitTestVisible = false
                 };
 
-                Ticks.Children.Add(tick);
+                // 3px 的线太细抓不住，外面套一个整格的透明热区来接鼠标
+                var cell = new Border
+                {
+                    Width = SlotWidth,
+                    Height = BarHeight,
+                    Background = Brushes.Transparent,
+                    Cursor = System.Windows.Input.Cursors.Hand,
+                    Child = tick
+                };
+
+                int slot = _ticks.Count;
+                cell.MouseLeftButtonDown += (_, e) => BeginTickDrag(slot, e);
+
+                Ticks.Children.Add(cell);
                 _ticks.Add(tick);
             }
 
@@ -155,6 +179,12 @@ namespace Nook
             {
                 if (_revealed) HideRail(true);
                 ClosePanelNow();
+                return;
+            }
+
+            if (_dragging)
+            {
+                _leaveSince = DateTime.MinValue;
                 return;
             }
 
@@ -279,6 +309,65 @@ namespace Nook
             _open?.ClosePanelNow();
             _open = null;
             _openIndex = -1;
+        }
+
+        // ==================== 拖动排序 ====================
+
+        private void BeginTickDrag(int index, MouseButtonEventArgs e)
+        {
+            if (_manager.State.Drawers.Count < 2) return;
+
+            Log.Write($"drag begin idx={index}");
+            _dragging = true;
+            _dragFrom = index;
+            _dragTarget = index;
+
+            ClosePanelNow();
+            CaptureMouse();
+            ShowMarker(index);
+
+            e.Handled = true;
+        }
+
+        private void Rail_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (!_dragging || !IsMouseCaptured) return;
+
+            double screenX = Left + e.GetPosition(this).X;
+            int target = Math.Clamp(IndexAt(screenX), 0, _manager.State.Drawers.Count - 1);
+
+            if (target == _dragTarget) return;
+
+            _dragTarget = target;
+            ShowMarker(target);
+        }
+
+        private void Rail_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!_dragging) return;
+
+            int from = _dragFrom;
+            int to = _dragTarget;
+            Log.Write($"drag end {from}->{to}");
+
+            _dragging = false;
+            _dragFrom = _dragTarget = -1;
+            ReleaseMouseCapture();
+            DragMarker.Visibility = Visibility.Collapsed;
+
+            if (from >= 0 && to >= 0 && from != to)
+            {
+                var data = _manager.State.Drawers[from];
+                _manager.MoveDrawer(data, to - from);
+            }
+
+            e.Handled = true;
+        }
+
+        private void ShowMarker(int index)
+        {
+            DragMarker.Margin = new Thickness(LeftPad + index * SlotWidth - 1, 0, 0, 0);
+            DragMarker.Visibility = Visibility.Visible;
         }
 
         /// <summary>抽屉换位后，把正开着的面板移到新刻度下方。</summary>

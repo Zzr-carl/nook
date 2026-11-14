@@ -29,5 +29,11 @@
 
         <StackPanel x:Name="Ticks" Orientation="Horizontal"
                     VerticalAlignment="Top" Margin="12,0,0,0" />
+
+        <!-- 拖动排序时的插入位指示 -->
+        <Border x:Name="DragMarker" Width="2" Height="15" CornerRadius="1"
+                HorizontalAlignment="Left" VerticalAlignment="Top"
+                Background="{StaticResource Accent}" Visibility="Collapsed"
+                IsHitTestVisible="False" />
     </Grid>
 </Window>
