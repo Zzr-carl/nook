@@ -8,14 +8,14 @@
         ResizeMode="NoResize"
         ShowInTaskbar="False"
         Topmost="True"
-        Width="280" Height="18"
+        Width="320" Height="22"
         WindowStartupLocation="Manual"
         UseLayoutRounding="True"
         SnapsToDevicePixels="True"
         TextOptions.TextRenderingMode="Grayscale">
 
     <Grid x:Name="Root" Background="Transparent">
-        <Border x:Name="Shell" CornerRadius="0,0,11,11">
+        <Border x:Name="Shell" CornerRadius="0,0,12,12">
             <Border.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                     <GradientStop Color="#F00B0C0E" Offset="0" />
@@ -24,14 +24,14 @@
             </Border.Background>
         </Border>
 
-        <Border CornerRadius="0,0,11,11" BorderThickness="0,0,1,1"
+        <Border CornerRadius="0,0,12,12" BorderThickness="0,0,1,1"
                 BorderBrush="{StaticResource Hairline}" IsHitTestVisible="False" />
 
         <StackPanel x:Name="Ticks" Orientation="Horizontal"
                     VerticalAlignment="Top" Margin="12,0,0,0" />
 
         <!-- 拖动排序时的插入位指示 -->
-        <Border x:Name="DragMarker" Width="2" Height="17" CornerRadius="1"
+        <Border x:Name="DragMarker" Width="2" Height="21" CornerRadius="1"
                 HorizontalAlignment="Left" VerticalAlignment="Top"
                 Background="{StaticResource Accent}" Visibility="Collapsed"
                 IsHitTestVisible="False" />

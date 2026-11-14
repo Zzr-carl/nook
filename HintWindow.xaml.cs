@@ -52,17 +52,18 @@ namespace Nook
             if (shown == 0) Icons.Visibility = Visibility.Collapsed;
             else Icons.Visibility = Visibility.Visible;
 
-            // 先量出实际宽度，再按刻度居中
+            // 尺寸要等窗口真正显示后才是准的，所以先透明显示、量完再定位，避免偏一格
+            Opacity = 0;
+            if (!IsVisible) Show();
             UpdateLayout();
 
             var box = SystemParameters.WorkArea;
-            double w = ActualWidth > 0 ? ActualWidth : 160;
+            double w = ActualWidth;
             double left = Math.Max(box.Left + 6, Math.Min(tickCenterX - w / 2, box.Right - 6 - w));
 
             Left = left;
             Top = top;
-
-            if (!IsVisible) Show();
+            Opacity = 1;
 
             }
             catch (Exception ex)

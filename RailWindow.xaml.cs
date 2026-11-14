@@ -15,9 +15,9 @@ namespace Nook
     /// </summary>
     public partial class RailWindow : Window
     {
-        private const double BarHeight = 18;
-        private const double SlotWidth = 26;
-        private const double LeftPad = 12;
+        private const double BarHeight = 22;
+        private const double SlotWidth = 32;
+        private const double LeftPad = 16;
 
         private const int DwellMs = 550;
         private const int AwayCloseMs = 420;
@@ -136,9 +136,9 @@ namespace Nook
             {
                 var tick = new Border
                 {
-                    Width = 4,
-                    Height = 11,
-                    CornerRadius = new CornerRadius(0, 0, 1.5, 1.5),
+                    Width = 5,
+                    Height = 13,
+                    CornerRadius = new CornerRadius(0, 0, 2, 2),
                     Background = new SolidColorBrush(Color.FromArgb(0x38, 0xF4, 0xF5, 0xF7)),
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Top,
@@ -177,10 +177,20 @@ namespace Nook
             {
                 bool on = i == index || i == _openIndex;
 
-                _ticks[i].Height = on ? 17 : 11;
+                _ticks[i].Height = on ? 22 : 13;
                 _ticks[i].Background = on
                     ? new SolidColorBrush(Color.FromArgb(0xFF, 0xE9, 0xB8, 0x72))
                     : new SolidColorBrush(Color.FromArgb(0x38, 0xF4, 0xF5, 0xF7));
+
+                _ticks[i].Effect = on
+                    ? new System.Windows.Media.Effects.DropShadowEffect
+                    {
+                        Color = Color.FromRgb(0xE9, 0xB8, 0x72),
+                        BlurRadius = 14,
+                        ShadowDepth = 0,
+                        Opacity = 0.55
+                    }
+                    : null;
             }
         }
 

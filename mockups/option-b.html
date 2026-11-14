@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>方案 B · 键盘直达</title>
+<style>
+  :root{
+    --ink:#F4F5F7; --ink-faint:rgba(244,245,247,.34);
+    --accent:#E9B872; --rail:#0E1013; --rail-2:#15171C;
+    --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+    --sans:"Sora","Inter",-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--sans);overflow:hidden;
+    background:radial-gradient(120% 80% at 78% 12%, #FBF7EE 0%, #F3EBDD 42%, #E8DDC9 100%);
+  }
+  body::before{
+    content:"";position:fixed;inset:0;pointer-events:none;
+    background:
+      radial-gradient(46% 34% at 22% 74%, rgba(255,255,255,.55), transparent 70%),
+      radial-gradient(38% 30% at 86% 62%, rgba(214,196,166,.42), transparent 72%);
+  }
+  .stage{position:relative;height:100vh;display:flex;justify-content:center}
+
+  .rail{
+    position:relative;display:flex;align-items:flex-start;height:18px;padding:0 12px;
+    background:linear-gradient(180deg,var(--rail),var(--rail-2));
+    border-radius:0 0 11px 11px;
+    box-shadow:0 6px 18px -10px rgba(20,16,8,.4);
+  }
+  .rail::after{content:"";position:absolute;inset:0;border-radius:inherit;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);pointer-events:none}
+
+  /* 每格 26 宽，和现在一致 */
+  .slot{position:relative;width:26px;height:18px;display:grid;place-items:start center;cursor:default}
+  .tick{width:4px;height:11px;border-radius:0 0 1.5px 1.5px;
+    background:rgba(244,245,247,.22);transition:height .18s, background .18s}
+  .slot:hover .tick{height:17px;background:var(--accent)}
+
+  /* 悬停时冒出的数字 */
+  .key{
+    position:absolute;top:19px;left:50%;transform:translate(-50%,-3px);
+    font-family:var(--mono);font-size:9.5px;line-height:1;color:var(--accent);
+    background:rgba(14,16,19,.92);padding:3px 5px;border-radius:4px;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);
+    opacity:0;transition:opacity .14s,transform .14s;pointer-events:none;
+  }
+  .slot:hover .key{opacity:1;transform:translate(-50%,0)}
+
+  /* 按住数字键时的高亮 */
+  .rail.keys .key{opacity:1;transform:translate(-50%,0)}
+  .rail.keys .key.hit{color:#191307;background:var(--accent);box-shadow:0 0 10px rgba(233,184,114,.55)}
+
+  .card{
+    position:absolute;top:34px;left:50%;transform:translateX(-50%);z-index:2;
+    display:flex;align-items:center;gap:6px;padding:9px 13px;border-radius:13px;
+    background:rgba(14,16,19,.96);white-space:nowrap;
+    box-shadow:0 10px 30px -12px rgba(20,16,8,.6),inset 0 0 0 1px rgba(255,255,255,.12);
+    opacity:0;pointer-events:none;transition:opacity .18s ease, top .18s ease;
+  }
+  .card.on{opacity:1;top:42px}
+  .card b{font-size:12.5px;font-weight:500;color:var(--ink)}
+  .card .num{font-family:var(--mono);font-size:10px;color:var(--ink-faint)}
+  .card .row{display:flex;gap:6px;margin-left:6px}
+  .card .row i{display:block;width:17px;height:17px;border-radius:4px;background:rgba(244,245,247,.24)}
+
+  .slot .key{z-index:3}
+
+  .note{position:fixed;left:40px;bottom:36px;max-width:440px}
+  .tag{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+    color:#8A6B36;background:rgba(233,184,114,.24);padding:3px 8px;border-radius:5px}
+  .note h1{font-size:26px;font-weight:600;letter-spacing:-.01em;margin:14px 0 10px;color:#241F18}
+  .note p{font-size:13.5px;line-height:1.72;color:#5C5344}
+  .note p+p{margin-top:7px}
+  .note em{font-style:normal;color:#8A6B36;border-bottom:1px solid rgba(138,107,54,.35)}
+  .dim{position:fixed;right:40px;bottom:36px;font-family:var(--mono);font-size:10.5px;color:#9A8E78;text-align:right;line-height:1.9}
+  kbd{font-family:var(--mono);font-size:11.5px;background:#2A241C;color:#F2E7D2;
+    padding:2px 6px;border-radius:4px;box-shadow:0 1px 0 rgba(0,0,0,.25)}
+
+  /* 尊重系统"减少动态效果"设置 */
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="rail" id="rail">
+    <div class="slot"><div class="tick"></div><span class="key">1</span></div>
+    <div class="slot"><div class="tick"></div><span class="key">2</span></div>
+    <div class="slot"><div class="tick"></div><span class="key">3</span></div>
+    <div class="slot"><div class="tick"></div><span class="key">4</span></div>
+    <div class="slot"><div class="tick"></div><span class="key">5</span></div>
+    <div class="slot"><div class="tick"></div><span class="key">6</span></div>
+    <div class="slot"><div class="tick"></div><span class="key">7</span></div>
+    <div class="slot"><div class="tick"></div><span class="key">8</span></div>
+    <div class="slot"><div class="tick"></div><span class="key">9</span></div>
+  </div>
+
+  <div class="card" id="panel">
+    <b id="pn">媒体</b><span class="num" id="pc">8 项</span>
+    <div class="row" id="pr"></div>
+  </div>
+</div>
+
+<div class="note">
+  <span class="tag">方案 B</span>
+  <h1>键盘直达</h1>
+  <p>鼠标推到顶边后，每根刻度下冒出序号；按 <kbd>1</kbd>–<kbd>9</kbd> 直接展开对应抽屉，屏幕上试一下数字键。</p>
+  <p>代价：要记住数字对应哪个抽屉，反而多一层记忆。<em>组合键还可能和别的软件抢。</em></p>
+</div>
+
+<div class="dim">每格 26 × 18 · 刻度 4px<br>轨道总宽 258（不变）</div>
+
+<script>
+const rail = document.getElementById('rail');
+const panel = document.getElementById('panel');
+const keys = [...document.querySelectorAll('.key')];
+
+rail.addEventListener('mouseenter', () => rail.classList.add('keys'));
+rail.addEventListener('mouseleave', () => rail.classList.remove('keys'));
+
+const names = ['游戏','驱动优化','加速器','AI','文件夹','媒体','工具','社交','杂七杂八'];
+const counts = [23,11,3,15,9,8,10,6,4];
+
+function fire(n){
+  keys.forEach(k => k.classList.remove('hit'));
+  keys[n - 1].classList.add('hit');
+  rail.classList.add('keys');
+
+  const slot = document.querySelectorAll('.slot')[n - 1].getBoundingClientRect();
+  panel.style.left = (slot.left + slot.width / 2) + 'px';
+
+  document.getElementById('pn').textContent = names[n - 1];
+  document.getElementById('pc').textContent = counts[n - 1] + ' 项';
+
+  const row = document.getElementById('pr');
+  row.innerHTML = '';
+  for (let i = 0; i < Math.min(6, counts[n - 1]); i++) row.appendChild(document.createElement('i'));
+
+  panel.classList.add('on');
+}
+
+addEventListener('keydown', e => {
+  const n = parseInt(e.key, 10);
+  if (!n || n < 1 || n > 9) return;
+  fire(n);
+});
+
+// 打开页面先自动演示一次，不用猜它是干什么的
+setTimeout(() => fire(6), 1200);
+</script>
+</body>
+</html>
