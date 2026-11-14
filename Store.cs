@@ -43,6 +43,9 @@ namespace Nook
 
         /// <summary>顶部轨常驻，不自动收起</summary>
         public bool RailAlwaysVisible { get; set; }
+
+        /// <summary>鼠标离开就收起面板；关掉后要点桌面才收</summary>
+        public bool CloseOnLeave { get; set; } = true;
     }
 
     public static class Store

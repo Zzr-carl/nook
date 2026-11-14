@@ -34,6 +34,7 @@ namespace Nook
         private DateTime _hoverSince;
         private DateTime _awaySince = DateTime.MinValue;
         private DateTime _leaveSince = DateTime.MinValue;
+        private bool _leftWasDown;
         private DateTime _graceUntil = DateTime.MinValue;
 
         private DrawerWindow? _open;
@@ -94,6 +95,9 @@ namespace Nook
         }
 
         private bool AlwaysVisible => _manager.State.RailAlwaysVisible;
+
+        /// <summary>true = 鼠标离开就收；false = 点了别处才收。</summary>
+        private bool CloseOnLeave => _manager.State.CloseOnLeave;
 
         private void HideRail(bool force = false)
         {
@@ -250,13 +254,26 @@ namespace Nook
                 OpenIndex(index);
             }
 
-            if (_open != null && _leaveSince != DateTime.MinValue &&
+            if (CloseOnLeave && _open != null && _leaveSince != DateTime.MinValue &&
                 (DateTime.Now - _leaveSince).TotalMilliseconds >= AwayCloseMs &&
                 DateTime.Now >= _graceUntil && !_open.IsPinned)
             {
                 ClosePanelNow();
                 Highlight(_hoverIndex);
             }
+
+            // 关掉"离开即收"后，改为监听左键：在面板和轨之外按下就收
+            bool leftDown = (Native.GetAsyncKeyState(0x01) & 0x8000) != 0;
+
+            if (!CloseOnLeave && _open != null && !_pressed && leftDown && !_leftWasDown &&
+                !overPanel && !overRail)
+            {
+                Log.Write("click outside: 收起面板");
+                ClosePanelNow();
+                Highlight(_hoverIndex);
+            }
+
+            _leftWasDown = leftDown;
 
             if (!AlwaysVisible && !overRail && !overPanel && _leaveSince != DateTime.MinValue &&
                 (DateTime.Now - _leaveSince).TotalMilliseconds >= HideRailMs)

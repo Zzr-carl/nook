@@ -144,6 +144,12 @@ namespace Nook
 
         public void CloseAllPanels() => Rail?.CloseOpenPanel();
 
+        public void SetCloseOnLeave(bool on)
+        {
+            State.CloseOnLeave = on;
+            Save();
+        }
+
         public void SetRailAlwaysVisible(bool on)
         {
             State.RailAlwaysVisible = on;

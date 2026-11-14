@@ -103,6 +103,15 @@ namespace Nook
             };
             _menu.Items.Add(autoRun);
 
+            var closeOnLeave = new MenuItem
+            {
+                Header = "移开鼠标就收起",
+                IsCheckable = true,
+                IsChecked = _manager.State.CloseOnLeave
+            };
+            closeOnLeave.Click += (_, _) => _manager.SetCloseOnLeave(!_manager.State.CloseOnLeave);
+            _menu.Items.Add(closeOnLeave);
+
             var keep = new MenuItem
             {
                 Header = "始终显示顶部轨",
