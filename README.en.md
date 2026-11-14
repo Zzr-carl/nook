@@ -8,41 +8,33 @@
 
 Tidy your desktop into drawers that drop down from the top edge of your screen.
 
-A hairline rail lives along the top edge — each tick is one drawer. Push the mouse up, pause for a beat, and the drawer slides out from under the rail. Move away and it retracts.
+A hairline rail lives along the top edge — each tick is one drawer. Push the mouse up, pause for a beat, and the drawer drops down. Move away and it retracts.
 
-## What it is
+## Why I wrote it
 
-Windows desktops collect icons faster than you can delete shortcuts. Nook groups them into "drawers" so the desktop stays clean, and you pull one down from the top edge when you need it.
+My desktop collected 90+ icons and I couldn't take it anymore. Deleting felt wrong, and every "desktop organizer" out there just wants to build folders for me. So Nook groups icons into "drawers", leaves nothing but the wallpaper, and pulls one down from the top when you need it.
 
-**It doesn't hide desktop icons — it actually moves the files into the drawer** (a `.nook-items` folder on the same volume), so it's near-instant and never blocks on cross-drive moves. The original path is kept in the config, and everything can be sent back to the desktop in one click.
+It doesn't hide icons — it actually **moves the files into the drawer** (a plain move within the same disk volume, near-instant). The original path is kept in the config, and everything goes back to the desktop in one click.
 
-## Usage
+## How to use it
 
-- Push the mouse to the very top edge → the rail appears
-- Rest on a tick → a small card pops out first (drawer name, item count, first few icons); hold for ~0.5s and the full drawer drops down
-- Click a tick → opens instantly, no waiting
-- Drag a tick sideways → reorder drawers; an insertion marker shows where it will land
-- Move away → the drawer retracts, the rail stays (switchable to "close on click" in the tray)
-- Drop files onto the panel → they're filed into the current drawer
-- Right-click the panel / click `···` next to the title → manage menu (rename, icon size, restore to desktop, backup…)
+- Push the mouse to the very top edge, and the rail appears
+- Resting on a tick pops out a small card with the drawer's name and icons; hold half a second and the full drawer drops down — or just click the tick to open instantly
+- Drag a tick sideways to reorder drawers
+- Drop files onto the panel to file them into the current drawer
+- Right-click the panel or hit `···` to manage it: rename, icon size, restore to desktop, backup
 
-The tray icon offers: drawer list, accent color, backup & restore, run at startup, close-on-mouse-leave, hover-to-open, always-visible rail, always-on-top.
+The tray icon has the drawer list, accent color, backup & restore, autostart and a few switches worth knowing:
 
-**Accent color** ships nine presets (amber, coral, orange, green, teal, blue, violet, pink, silver) plus a system color picker — ticks, accent bars, selection borders and the drag marker all follow, so you can match any wallpaper.
-
-Unchecking **close-on-mouse-leave** pins the drawer in place until you click anywhere outside the panel.
-
-## Highlights
-
-- **Yields when the top edge is taken**: when the foreground window is maximized, or fullscreen (exclusive games, borderless fullscreen, full-screen video), the rail retreats off-screen. Fullscreen hides it completely; when maximized, resting the mouse on the very top edge for ~0.15s brings it back temporarily. It returns automatically on the desktop or normal windows
-- **Hover preview**: not sure which drawer holds what? Pause on a tick to see its name and icons without opening anything
-- **Custom accent**: nine presets plus a color picker — the whole UI follows in real time to match any wallpaper
-- **Real glass**: the panel backdrop is the actual desktop, captured and genuinely blurred — not a translucent white. It keeps refreshing while open, so the glass follows the desktop
-  (trade-off: the panel is invisible to screenshot/recording tools — that's the price of continuous refresh, otherwise it would capture itself)
-- **Icon snapshots**: a PNG is captured when an item is added, so icons never turn blank after the file moves
-- **Steam games**: cover art comes from the Steam library and CDN — much nicer than system icons
-- **Icons stay in memory**: the second open of a drawer is near-instant
-- **Backup**: the whole drawer structure + icons zips up in one file; a safety snapshot of the current state is taken before any restore
+- **Accent color** — nine presets plus a color picker; ticks, accent bars and borders all follow, so it can match your wallpaper
+- **Live glass backdrop** — the panel background is the actual desktop, genuinely blurred, and it keeps updating while open. Trade-off: the panel is invisible to screenshots and recordings, otherwise it would capture itself
+- **Hover preview** — know what's inside a drawer without opening it
+- **Steam covers** — game icons come straight from Steam, way better than system icons
+- **Icon snapshots** — icons never turn blank after a file moves
+- **Fullscreen courtesy** — the rail hides while you're gaming; when a window is maximized, resting on the top edge brings it back temporarily
+- **Close behavior** — retract on mouse-leave, or on outside click, your call
+- **Icons stay in memory** — the second open of a drawer is near-instant
+- **Backup** — one-click zip, and it snapshots the current state before any restore
 
 ## Build
 
@@ -92,8 +84,8 @@ Logs go to `%TEMP%\nook.log`.
 
 ## Fonts
 
-UI typefaces are [Sora](https://github.com/sora-xor/sora-font) and [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono), both under the SIL Open Font License 1.1 — see `Assets/Fonts/licenses/`.
+UI typefaces are [Sora](https://github.com/sora-xor/sora-font) and [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono), both SIL OFL 1.1 — licenses in `Assets/Fonts/licenses/`.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE), do whatever you like.
