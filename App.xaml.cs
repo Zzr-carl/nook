@@ -100,6 +100,15 @@ namespace Nook
 
             if (e.Args.Contains("--uicheck")) _ = UiCheckAsync();
 
+            int ac = Array.IndexOf(e.Args, "--accent");
+            if (ac >= 0 && ac + 1 < e.Args.Length)
+            {
+                _manager.SetAccent(e.Args[ac + 1]);
+                Log.Write($"accent set: {e.Args[ac + 1]} → 现在 {App.AccentColor}");
+                Shutdown();
+                return;
+            }
+
             int ro = Array.IndexOf(e.Args, "--reorder");
             if (ro >= 0 && ro + 2 < e.Args.Length)
             {

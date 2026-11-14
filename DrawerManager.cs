@@ -154,6 +154,7 @@ namespace Nook
 
             foreach (var w in _panels.Values) w.RefreshAccent();
             Rail?.RefreshAccent();
+            Rail?.Pulse();   // 闪一下新颜色，别让用户对着空气猜
         }
 
         public void SetCloseOnLeave(bool on)

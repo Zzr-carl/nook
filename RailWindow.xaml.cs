@@ -586,6 +586,9 @@ namespace Nook
         /// <summary>已经在运行时被再次启动：给出可见回应，而不是悄无声息。</summary>
         public void Pulse()
         {
+            // 顶部被占时别强行冒出来，静默刷新即可
+            if (_fullscreen.Mode != Occlusion.None) { RefreshAccent(); return; }
+
             Reveal();
 
             foreach (var tick in _ticks)

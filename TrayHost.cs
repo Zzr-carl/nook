@@ -14,6 +14,7 @@ namespace Nook
         private readonly DrawerManager _manager;
         private readonly WinForms.NotifyIcon _icon;
         private readonly ContextMenu _menu;
+        private readonly Window _anchor;
         private bool _disposed;
 
         public TrayHost(DrawerManager manager)
@@ -25,6 +26,23 @@ namespace Nook
                 Style = (Style)Application.Current.FindResource("NookMenu")
             };
             _menu.Opened += (_, _) => Rebuild();
+
+            // 没有父级的 ContextMenu 用 IsOpen 弹出时，二级子菜单打不开（拿不到菜单焦点）。
+            // 挂一个藏在屏幕外的锚点窗口当宿主，子菜单就正常了。
+            _anchor = new Window
+            {
+                Width = 1,
+                Height = 1,
+                WindowStyle = WindowStyle.None,
+                ResizeMode = ResizeMode.NoResize,
+                ShowInTaskbar = false,
+                ShowActivated = false,
+                Background = System.Windows.Media.Brushes.Transparent,
+                Left = -300,
+                Top = -300
+            };
+            _anchor.Show();
+            _menu.PlacementTarget = _anchor;
 
             _icon = new WinForms.NotifyIcon
             {
