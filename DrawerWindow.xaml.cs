@@ -215,18 +215,11 @@ namespace Nook
             var box = SystemParameters.WorkArea;
             var m = CardMetrics.For(_data.IconSize);
 
-            // 列数按条目数长：三列起步、八列封顶，且尽量不留"末行只有一个"的孤儿格
+            // 方案 A：所有抽屉统一 6 列，行数按条目叠。宽度永远一致，整齐优先
             int total = _data.Items.Count + 1;
 
-            int cols = 8, rows = (int)Math.Ceiling(total / 8.0), waste = cols * rows - total;
-            for (int c = 3; c <= 8; c++)
-            {
-                int r = (int)Math.Ceiling(total / (double)c);
-                if (r > 3) continue;
-
-                int w2 = c * r - total;
-                if (w2 < waste) { cols = c; rows = r; waste = w2; }
-            }
+            int cols = 6;
+            int rows = Math.Max(1, (int)Math.Ceiling(total / (double)cols));
 
             double w = 24 + cols * (m.CardWidth + 2);
             double h = Math.Clamp(66 + 12 + rows * (m.CardHeight + 2) + 10, 180, box.Height - 140);
