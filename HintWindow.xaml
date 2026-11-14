@@ -1,0 +1,35 @@
+<Window x:Class="Nook.HintWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="NookHint"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="True"
+        SizeToContent="WidthAndHeight"
+        MaxWidth="320"
+        WindowStartupLocation="Manual"
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextRenderingMode="Grayscale">
+
+    <Border x:Name="Pill" CornerRadius="13" Background="#F2101216"
+            BorderBrush="#26FFFFFF" BorderThickness="1" Margin="0,0,0,4">
+        <StackPanel Margin="14,9,14,10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="NameText" Text="抽屉"
+                           FontFamily="{StaticResource Display}" FontSize="12.5"
+                           Foreground="{StaticResource InkStrong}" />
+                <TextBlock x:Name="CountText" Text="0 项"
+                           FontFamily="{StaticResource Mono}" FontSize="10"
+                           Foreground="{StaticResource InkFaint}"
+                           Margin="9,0,0,1" VerticalAlignment="Bottom" />
+            </StackPanel>
+
+            <StackPanel x:Name="Icons" Orientation="Horizontal" Margin="0,8,0,0" />
+        </StackPanel>
+    </Border>
+</Window>

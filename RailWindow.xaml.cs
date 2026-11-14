@@ -19,7 +19,7 @@ namespace Nook
         private const double SlotWidth = 17;
         private const double LeftPad = 12;
 
-        private const int DwellMs = 320;
+        private const int DwellMs = 550;
         private const int AwayCloseMs = 420;
         private const int HideRailMs = 900;
 
@@ -37,6 +37,7 @@ namespace Nook
         private DateTime _graceUntil = DateTime.MinValue;
 
         private DrawerWindow? _open;
+        private HintWindow? _hint;
 
         private bool _pressed;
         private bool _dragging;
@@ -101,6 +102,7 @@ namespace Nook
             _revealed = false;
             _leaveSince = DateTime.MinValue;
             Highlight(-1);
+            HideHint();
             MoveTo(Work.Top - BarHeight, 240);
         }
 
@@ -226,6 +228,9 @@ namespace Nook
                 _hoverIndex = index;
                 _hoverSince = DateTime.Now;
                 Highlight(index);
+
+                if (index >= 0 && _open == null) ShowHint(index);
+                else HideHint();
             }
 
             if (index >= 0 && App.HoverToOpen &&
@@ -297,6 +302,8 @@ namespace Nook
             var data = _manager.State.Drawers[index];
             var window = _manager.GetOrCreatePanel(data);
 
+            HideHint();
+
             _open = window;
             _openIndex = index;
 
@@ -325,6 +332,16 @@ namespace Nook
             _open = null;
             _openIndex = -1;
         }
+
+        private void ShowHint(int index)
+        {
+            if (index < 0 || index >= _manager.State.Drawers.Count) { HideHint(); return; }
+
+            _hint ??= new HintWindow();
+            _hint.ShowFor(_manager.State.Drawers[index], TickCenter(index), Work.Top + BarHeight + 8);
+        }
+
+        private void HideHint() => _hint?.HideHint();
 
         // ==================== 点击 / 拖动排序 ====================
 
@@ -357,6 +374,7 @@ namespace Nook
 
                 _dragging = true;
                 _dragFrom = _pressIndex;
+                HideHint();
                 _dragTarget = _pressIndex;
 
                 ClosePanelNow();
