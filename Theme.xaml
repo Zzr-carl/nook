@@ -15,6 +15,11 @@
     <SolidColorBrush x:Key="InkFaint" Color="#5CF4F5F7" />
     <SolidColorBrush x:Key="Accent" Color="#E9B872" />
     <SolidColorBrush x:Key="AccentSoft" Color="#3DE9B872" />
+    <SolidColorBrush x:Key="AccentTileHover" Color="#1AE9B872" />
+    <SolidColorBrush x:Key="AccentTileBorder" Color="#44E9B872" />
+    <SolidColorBrush x:Key="AccentBarFade" Color="#80E9B872" />
+    <SolidColorBrush x:Key="AccentBarPinned" Color="#4DE9B872" />
+    <SolidColorBrush x:Key="AccentHintBorder" Color="#59E9B872" />
     <SolidColorBrush x:Key="SurfaceSolid" Color="#131418" />
 
     <!-- 玻璃罩：压暗底噪，保证任意壁纸上的文字可读 -->
@@ -54,7 +59,7 @@
                             <Setter TargetName="T" Property="Background" Value="#55FFFFFF" />
                         </Trigger>
                         <Trigger Property="IsDragging" Value="True">
-                            <Setter TargetName="T" Property="Background" Value="{StaticResource AccentSoft}" />
+                            <Setter TargetName="T" Property="Background" Value="{DynamicResource AccentSoft}" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

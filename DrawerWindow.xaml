@@ -50,8 +50,8 @@
                         Margin="22,2,11,0" VerticalAlignment="Center">
                     <Border.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                            <GradientStop Color="#FFE9B872" Offset="0" />
-                            <GradientStop Color="#80E9B872" Offset="1" />
+                            <GradientStop x:Name="AccentStopTop" Color="#FFE9B872" Offset="0" />
+                            <GradientStop x:Name="AccentStopBottom" Color="#80E9B872" Offset="1" />
                         </LinearGradientBrush>
                     </Border.Background>
                 </Border>
@@ -64,8 +64,8 @@
                     <TextBox x:Name="TitleEditor" Visibility="Collapsed"
                              FontFamily="{StaticResource Display}" FontSize="16.5"
                              Foreground="{StaticResource InkStrong}" Background="#14FFFFFF"
-                             BorderThickness="0" Padding="4,1" CaretBrush="{StaticResource Accent}"
-                             SelectionBrush="{StaticResource AccentSoft}"
+                             BorderThickness="0" Padding="4,1" CaretBrush="{DynamicResource Accent}"
+                             SelectionBrush="{DynamicResource AccentSoft}"
                              MaxLength="24" KeyDown="TitleEditor_KeyDown" LostFocus="TitleEditor_LostFocus" />
                     <TextBlock x:Name="SubTitleText" Text="0 项"
                                FontFamily="{StaticResource Mono}" FontSize="10"
@@ -127,8 +127,8 @@
                                                 <Setter Property="BorderBrush" Value="#14FFFFFF" />
                                             </Trigger>
                                             <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                                <Setter Property="Background" Value="#1AE9B872" />
-                                                <Setter Property="BorderBrush" Value="#44E9B872" />
+                                                <Setter Property="Background" Value="{DynamicResource AccentTileHover}" />
+                                                <Setter Property="BorderBrush" Value="{DynamicResource AccentTileBorder}" />
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding IsMissing}" Value="True">
                                                 <Setter Property="Opacity" Value="0.32" />
@@ -192,7 +192,7 @@
 
                 <Canvas x:Name="MarkerLayer" IsHitTestVisible="False">
                     <Border x:Name="InsertMarker" Width="2.5" Height="78" CornerRadius="1.5"
-                            Background="{StaticResource Accent}" Visibility="Collapsed" Opacity="0.9" />
+                            Background="{DynamicResource Accent}" Visibility="Collapsed" Opacity="0.9" />
                 </Canvas>
                 </Grid>
             </ScrollViewer>
@@ -200,6 +200,6 @@
 
         <!-- 拖入反馈 -->
         <Border x:Name="DropHint" CornerRadius="23" BorderThickness="1.5"
-                BorderBrush="#59E9B872" Visibility="Collapsed" IsHitTestVisible="False" />
+                BorderBrush="{DynamicResource AccentHintBorder}" Visibility="Collapsed" IsHitTestVisible="False" />
     </Grid>
 </Window>

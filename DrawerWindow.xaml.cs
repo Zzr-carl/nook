@@ -161,8 +161,17 @@ namespace Nook
             AccentBar.Width = _data.Pinned ? 3.5 : 3;
 
             HairlineBorder.BorderBrush = _data.Pinned
-                ? new SolidColorBrush(Color.FromArgb(0x4D, 0xE9, 0xB8, 0x72))
+                ? new SolidColorBrush(Color.FromArgb(0x4D, App.AccentColor.R, App.AccentColor.G, App.AccentColor.B))
                 : (Brush)FindResource("Hairline");
+        }
+
+        /// <summary>换主题色后刷新渐变端点和固定色。DynamicResource 部分会自动跟。</summary>
+        public void RefreshAccent()
+        {
+            var c = App.AccentColor;
+            AccentStopTop.Color = Color.FromRgb(c.R, c.G, c.B);
+            AccentStopBottom.Color = Color.FromArgb(0x80, c.R, c.G, c.B);
+            ApplyPinnedVisual();
         }
 
         public bool IsExpanded => _expanded;
@@ -181,6 +190,7 @@ namespace Nook
             Top = -6000;
 
             ApplyTopmost();
+            RefreshAccent();
 
             SourceInitialized += (_, _) =>
             {

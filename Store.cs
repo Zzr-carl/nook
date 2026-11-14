@@ -46,6 +46,9 @@ namespace Nook
 
         /// <summary>鼠标离开就收起面板；关掉后要点桌面才收</summary>
         public bool CloseOnLeave { get; set; } = true;
+
+        /// <summary>主题色，#RRGGBB。琥珀是默认</summary>
+        public string AccentColor { get; set; } = "#E9B872";
     }
 
     public static class Store

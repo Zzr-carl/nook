@@ -26,7 +26,9 @@ Windows desktops collect icons faster than you can delete shortcuts. Nook groups
 - Drop files onto the panel → they're filed into the current drawer
 - Right-click the panel / click `···` next to the title → manage menu (rename, icon size, restore to desktop, backup…)
 
-The tray icon offers: drawer list, backup & restore, run at startup, close-on-mouse-leave, hover-to-open, always-visible rail, always-on-top.
+The tray icon offers: drawer list, accent color, backup & restore, run at startup, close-on-mouse-leave, hover-to-open, always-visible rail, always-on-top.
+
+**Accent color** ships nine presets (amber, coral, orange, green, teal, blue, violet, pink, silver) plus a system color picker — ticks, accent bars, selection borders and the drag marker all follow, so you can match any wallpaper.
 
 Unchecking **close-on-mouse-leave** pins the drawer in place until you click anywhere outside the panel.
 
@@ -34,6 +36,7 @@ Unchecking **close-on-mouse-leave** pins the drawer in place until you click any
 
 - **Yields when the top edge is taken**: when the foreground window is maximized, or fullscreen (exclusive games, borderless fullscreen, full-screen video), the rail retreats off-screen. Fullscreen hides it completely; when maximized, resting the mouse on the very top edge for ~0.15s brings it back temporarily. It returns automatically on the desktop or normal windows
 - **Hover preview**: not sure which drawer holds what? Pause on a tick to see its name and icons without opening anything
+- **Custom accent**: nine presets plus a color picker — the whole UI follows in real time to match any wallpaper
 - **Real glass**: the panel backdrop is the actual desktop, captured and genuinely blurred — not a translucent white. It keeps refreshing while open, so the glass follows the desktop
   (trade-off: the panel is invisible to screenshot/recording tools — that's the price of continuous refresh, otherwise it would capture itself)
 - **Icon snapshots**: a PNG is captured when an item is added, so icons never turn blank after the file moves

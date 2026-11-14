@@ -138,6 +138,9 @@ namespace Nook
 
         // ==================== 刻度 ====================
 
+        /// <summary>换色后重刷刻度高亮，让当前悬停的刻度立刻换上新色。</summary>
+        public void RefreshAccent() => Highlight(_hoverIndex);
+
         public void Rebuild()
         {
             Ticks.Children.Clear();
@@ -193,13 +196,13 @@ namespace Nook
 
                 _ticks[i].Height = on ? 22 : 13;
                 _ticks[i].Background = on
-                    ? new SolidColorBrush(Color.FromArgb(0xFF, 0xE9, 0xB8, 0x72))
+                    ? new SolidColorBrush(App.AccentColor)
                     : new SolidColorBrush(Color.FromArgb(0x38, 0xF4, 0xF5, 0xF7));
 
                 _ticks[i].Effect = on
                     ? new System.Windows.Media.Effects.DropShadowEffect
                     {
-                        Color = Color.FromRgb(0xE9, 0xB8, 0x72),
+                        Color = App.AccentColor,
                         BlurRadius = 14,
                         ShadowDepth = 0,
                         Opacity = 0.55
@@ -586,7 +589,7 @@ namespace Nook
             Reveal();
 
             foreach (var tick in _ticks)
-                tick.Background = new SolidColorBrush(Color.FromArgb(0xFF, 0xE9, 0xB8, 0x72));
+                tick.Background = new SolidColorBrush(App.AccentColor);
 
             var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(650) };
             timer.Tick += (_, _) =>

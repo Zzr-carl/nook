@@ -22,6 +22,7 @@ namespace Nook
         {
             State = Store.Load();
             App.HoverToOpen = State.HoverToOpen;
+            App.ApplyAccent(State.AccentColor);
 
             if (State.Drawers.Count == 0)
             {
@@ -143,6 +144,17 @@ namespace Nook
         public void ShowRail() => Rail?.ShowRail();
 
         public void CloseAllPanels() => Rail?.CloseOpenPanel();
+
+        /// <summary>换主题色：写配置、刷新全局资源、所有已建面板和轨立即跟随。</summary>
+        public void SetAccent(string hex)
+        {
+            State.AccentColor = hex;
+            Save();
+            App.ApplyAccent(hex);
+
+            foreach (var w in _panels.Values) w.RefreshAccent();
+            Rail?.RefreshAccent();
+        }
 
         public void SetCloseOnLeave(bool on)
         {

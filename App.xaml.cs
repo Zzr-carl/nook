@@ -4,12 +4,47 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace Nook
 {
     public partial class App : Application
     {
+        private static Color _accent = Color.FromRgb(0xE9, 0xB8, 0x72);
+
+        /// <summary>当前主题色。所有代码处取色都从这里拿，别再写死。</summary>
+        public static Color AccentColor => _accent;
+
+        /// <summary>解析 hex 并覆盖全套主题资源，已显示的窗口通过 DynamicResource 自动跟随。</summary>
+        public static void ApplyAccent(string? hex)
+        {
+            try
+            {
+                if (ColorConverter.ConvertFromString(hex) is Color c)
+                {
+                    _accent = c;
+                    ApplyAccentResources(c);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write($"accent parse failed '{hex}': {ex.Message}");
+            }
+        }
+
+        private static void ApplyAccentResources(Color c)
+        {
+            var r = Current.Resources;
+            r["Accent"] = new SolidColorBrush(c);
+            r["AccentColor"] = c;
+            r["AccentSoft"] = new SolidColorBrush(Color.FromArgb(0x3D, c.R, c.G, c.B));
+            r["AccentTileHover"] = new SolidColorBrush(Color.FromArgb(0x1A, c.R, c.G, c.B));
+            r["AccentTileBorder"] = new SolidColorBrush(Color.FromArgb(0x44, c.R, c.G, c.B));
+            r["AccentBarFade"] = new SolidColorBrush(Color.FromArgb(0x80, c.R, c.G, c.B));
+            r["AccentBarPinned"] = new SolidColorBrush(Color.FromArgb(0x4D, c.R, c.G, c.B));
+            r["AccentHintBorder"] = new SolidColorBrush(Color.FromArgb(0x59, c.R, c.G, c.B));
+        }
         /// <summary>悬停刻度是否直接展开（托盘的开关改它）</summary>
         public static bool HoverToOpen { get; set; } = true;
 
