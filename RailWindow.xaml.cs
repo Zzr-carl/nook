@@ -35,6 +35,7 @@ namespace Nook
         private DateTime _hoverSince;
         private DateTime _awaySince = DateTime.MinValue;
         private DateTime _leaveSince = DateTime.MinValue;
+        private DateTime _peekFrom = DateTime.MinValue;
         private bool _leftWasDown;
         private DateTime _graceUntil = DateTime.MinValue;
 
@@ -55,8 +56,16 @@ namespace Nook
             InitializeComponent();
 
             _fullscreen = new FullscreenWatcher();
-            _fullscreen.Changed += fullscreen => Dispatcher.BeginInvoke(
-                new Action(() => OnFullscreenChanged(fullscreen)));
+            _fullscreen.Changed += mode => Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    if (mode == Occlusion.None) return;
+
+                    // 刚切到"顶部被占"时先把东西收干净；之后靠上面的 peek 逻辑临时叫出
+                    HideRail(true);
+                    HideHint();
+                    ClosePanelNow();
+                }));
 
             _poll = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(55) };
             _poll.Tick += (_, _) => Poll();
@@ -201,14 +210,42 @@ namespace Nook
 
         // ==================== 主循环 ====================
 
+        private const int PeekDwellMs = 420;
+
         private void Poll()
         {
-            if (_fullscreen.IsFullscreen)
+            var occ = _fullscreen.Mode;
+
+            // 真·全屏：彻底让位，连临时冒头都不给
+            if (occ == Occlusion.Fullscreen)
             {
                 if (_revealed) HideRail(true);
+                HideHint();
                 ClosePanelNow();
+                _peekFrom = DateTime.MinValue;
                 return;
             }
+
+            // 最大化：只有鼠标贴着最顶边停一下才临时冒出来
+            if (occ == Occlusion.Maximized && !_revealed)
+            {
+                var q = CursorDip();
+
+                if (q.Y <= 2)
+                {
+                    if (_peekFrom == DateTime.MinValue) _peekFrom = DateTime.Now;
+                    else if ((DateTime.Now - _peekFrom).TotalMilliseconds >= PeekDwellMs)
+                    {
+                        _peekFrom = DateTime.MinValue;
+                        Reveal();
+                    }
+                }
+                else _peekFrom = DateTime.MinValue;
+
+                return;
+            }
+
+            if (occ == Occlusion.Maximized) _peekFrom = DateTime.MinValue;
 
             if (_pressed || _dragging)
             {
@@ -235,6 +272,18 @@ namespace Nook
 
             if (overRail || overPanel) _leaveSince = DateTime.MinValue;
             else if (_leaveSince == DateTime.MinValue) _leaveSince = DateTime.Now;
+
+            // 最大化时是"临时叫出来"的，人一走就收，别赖在别人标题栏上
+            if (occ == Occlusion.Maximized && !overRail && !overPanel &&
+                _leaveSince != DateTime.MinValue &&
+                (DateTime.Now - _leaveSince).TotalMilliseconds >= 280)
+            {
+                HideRail(true);
+                HideHint();
+                ClosePanelNow();
+                _leaveSince = DateTime.MinValue;
+                return;
+            }
 
             // 贴到最顶边只唤出轨；往下一丁点再开始计时，避免"只看一眼"就弹面板
             int index = (overRail && p.Y >= 5) ? IndexAt(p.X) : -1;

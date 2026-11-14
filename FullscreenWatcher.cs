@@ -5,18 +5,30 @@ using System.Windows.Threading;
 
 namespace Nook
 {
+    /// <summary>前台窗口占了屏幕顶部的两种程度。</summary>
+    internal enum Occlusion
+    {
+        /// <summary>桌面或普通窗口，轨道正常显示。</summary>
+        None,
+
+        /// <summary>最大化窗口：轨道让位，但鼠标顶边停留可以临时叫出来。</summary>
+        Maximized,
+
+        /// <summary>独占全屏或无边框全屏：完全让位，不打扰。</summary>
+        Fullscreen
+    }
+
     /// <summary>
-    /// 检测前台窗口是否占了屏幕顶部：独占全屏、无边框全屏、以及最大化窗口。
-    /// 命中时轨道和抽屉都让位，避免压住别人的标题栏或误触。
+    /// 判断前台窗口是否压住了屏幕顶部：独占全屏、无边框全屏、以及最大化窗口。
     /// </summary>
     internal sealed class FullscreenWatcher : IDisposable
     {
         private readonly DispatcherTimer _timer;
-        private bool _last;
+        private Occlusion _last = Occlusion.None;
 
-        public event Action<bool>? Changed;
+        public event Action<Occlusion>? Changed;
 
-        public bool IsFullscreen { get; private set; }
+        public Occlusion Mode { get; private set; } = Occlusion.None;
 
         public FullscreenWatcher()
         {
@@ -28,57 +40,60 @@ namespace Nook
 
         private void Poll()
         {
-            bool now = Detect();
+            var now = Detect();
             if (now == _last) return;
 
             _last = now;
-            IsFullscreen = now;
-            Log.Write($"fullscreen={now}");
+            Mode = now;
+            Log.Write($"occlusion={now}");
 
             Changed?.Invoke(now);
         }
 
-        private static bool Detect()
+        private static Occlusion Detect()
         {
             // 一、系统告诉我们有独占全屏（游戏最可靠的一条）
             if (SHQueryUserNotificationState(out int quns) == 0 &&
                 quns is QUNS_BUSY or QUNS_D3D_FULL_SCREEN or QUNS_PRESENTATION)
-                return true;
+                return Occlusion.Fullscreen;
 
             IntPtr fg = GetForegroundWindow();
-            if (fg == IntPtr.Zero) return false;
+            if (fg == IntPtr.Zero) return Occlusion.None;
 
             GetWindowThreadProcessId(fg, out uint pid);
-            if (pid == (uint)Environment.ProcessId) return false;
+            if (pid == (uint)Environment.ProcessId) return Occlusion.None;
 
             var cls = new StringBuilder(128);
             GetClassName(fg, cls, cls.Capacity);
 
             string name = cls.ToString();
-            if (name is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Windows.UI.Core.CoreWindow") return false;
+            if (name is "Progman" or "WorkerW" or "Shell_TrayWnd" or "Windows.UI.Core.CoreWindow")
+                return Occlusion.None;
 
             int style = GetWindowLong(fg, GWL_STYLE);
 
-            // 最大化的窗口，标题栏正压在轨道位置上：让开
-            if ((style & WS_MAXIMIZE) != 0) return true;
+            // 最大化的窗口，标题栏正压在轨道位置上
+            if ((style & WS_MAXIMIZE) != 0) return Occlusion.Maximized;
 
             // 有标题栏的普通窗口：轨道照常出现
-            if ((style & WS_CAPTION) == WS_CAPTION) return false;
+            if ((style & WS_CAPTION) == WS_CAPTION) return Occlusion.None;
 
             // 二、无边框 + 铺满整块屏幕 = 全屏
-            // 用 DWM 的真实可见边界；GetWindowRect 会把不可见的缩放边也算进去
-            if (!GetVisibleRect(fg, out RECT wr)) return false;
+            if (!GetVisibleRect(fg, out RECT wr)) return Occlusion.None;
 
             IntPtr mon = MonitorFromWindow(fg, MONITOR_DEFAULTTONEAREST);
             var mi = new MONITORINFO { cbSize = Marshal.SizeOf<MONITORINFO>() };
-            if (!GetMonitorInfo(mon, ref mi)) return false;
+            if (!GetMonitorInfo(mon, ref mi)) return Occlusion.None;
 
             RECT mr = mi.rcMonitor;
 
-            return wr.Left <= mr.Left && wr.Top <= mr.Top
-                && wr.Right >= mr.Right && wr.Bottom >= mr.Bottom;
+            bool covers = wr.Left <= mr.Left && wr.Top <= mr.Top
+                       && wr.Right >= mr.Right && wr.Bottom >= mr.Bottom;
+
+            return covers ? Occlusion.Fullscreen : Occlusion.None;
         }
 
+        /// <summary>DWM 的真实可见边界；GetWindowRect 会把不可见的缩放边也算进去。</summary>
         private static bool GetVisibleRect(IntPtr hwnd, out RECT rect)
         {
             if (DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS,
@@ -95,17 +110,11 @@ namespace Nook
         private const int QUNS_PRESENTATION = 4;
         private const int DWMWA_EXTENDED_FRAME_BOUNDS = 9;
 
-        [DllImport("shell32.dll")]
-        private static extern int SHQueryUserNotificationState(out int state);
-
-        [DllImport("dwmapi.dll")]
-        private static extern int DwmGetWindowAttribute(IntPtr hwnd, int attr, out RECT value, int size);
-
         private const uint MONITOR_DEFAULTTONEAREST = 2;
 
         private const int GWL_STYLE = -16;
-        private const int WS_CAPTION = 0x00C00000;
         private const int WS_MAXIMIZE = 0x01000000;
+        private const int WS_CAPTION = 0x00C00000;
 
         [StructLayout(LayoutKind.Sequential)]
         private struct RECT { public int Left, Top, Right, Bottom; }
@@ -118,6 +127,12 @@ namespace Nook
             public RECT rcWork;
             public uint dwFlags;
         }
+
+        [DllImport("shell32.dll")]
+        private static extern int SHQueryUserNotificationState(out int state);
+
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmGetWindowAttribute(IntPtr hwnd, int attr, out RECT value, int size);
 
         [DllImport("user32.dll")]
         private static extern int GetWindowLong(IntPtr hWnd, int index);
