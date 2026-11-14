@@ -1,0 +1,16 @@
+# 构建产物
+bin/
+obj/
+publish/
+
+# 发布出来的单文件
+*.exe
+*.pdb
+
+# 本地日志
+*.log
+
+# 编辑器
+.vs/
+.vscode/
+*.user

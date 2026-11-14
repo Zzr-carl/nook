@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>抽屉形态 · 4 个方向</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#F4F5F7;
+    --amber:#E9B872;
+    --mono:'JetBrains Mono', ui-monospace, Consolas, monospace;
+    --sans:'Sora','Segoe UI Variable Display',-apple-system,system-ui,sans-serif;
+    --ease:cubic-bezier(.22,.9,.24,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#08090B;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;padding:64px 56px 110px}
+
+  header{max-width:900px;margin:0 auto 56px}
+  header h1{font-size:26px;font-weight:500;letter-spacing:-.5px}
+  header p{margin-top:12px;font-size:13.5px;line-height:1.8;color:rgba(244,245,247,.5);max-width:640px}
+  header em{font-style:normal;color:var(--amber)}
+
+  .variant{max-width:900px;margin:0 auto 64px}
+  .head{display:flex;align-items:baseline;gap:14px;margin-bottom:14px}
+  .num{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.5px}
+  .name{font-size:15px;font-weight:500}
+  .tag{margin-left:auto;font-family:var(--mono);font-size:10px;color:rgba(244,245,247,.28)}
+
+  .stage{
+    position:relative;height:330px;border-radius:18px;overflow:hidden;
+    background:
+      radial-gradient(110% 90% at 86% 4%, rgba(226,150,64,.5) 0%, rgba(226,150,64,0) 48%),
+      radial-gradient(90% 80% at 8% 98%, rgba(24,58,66,.9) 0%, rgba(24,58,66,0) 62%),
+      linear-gradient(155deg,#151617 0%,#1C1E20 40%,#0D0F11 100%);
+  }
+  .stage::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(46% 46% at 78% 12%, rgba(255,216,164,.14), transparent 72%);
+  }
+  .hint{position:absolute;left:18px;bottom:14px;font-family:var(--mono);font-size:10px;color:rgba(244,245,247,.28)}
+
+  .glass{
+    background:linear-gradient(180deg,rgba(10,11,13,.84),rgba(19,20,24,.9));
+    backdrop-filter:blur(22px) saturate(115%);
+    -webkit-backdrop-filter:blur(22px) saturate(115%);
+    border:.7px solid rgba(255,255,255,.11);
+  }
+
+  /* ============ 01 边缘轨 ============ */
+  .rail{
+    position:absolute;right:0;top:38px;
+    width:14px;height:254px;border-radius:14px 0 0 14px;
+    display:flex;flex-direction:column;justify-content:center;gap:7px;
+    padding:12px 0;
+    background:linear-gradient(180deg,rgba(12,13,16,.7),rgba(18,19,23,.82));
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    border:.7px solid rgba(255,255,255,.09);border-right:none;
+    transition:width .34s var(--ease);
+  }
+  .rail:hover{width:22px}
+  .tick{
+    height:3px;margin:0 6px;border-radius:2px;
+    background:rgba(244,245,247,.34);
+    position:relative;cursor:pointer;
+    transition:all .3s var(--ease);
+  }
+  .tick:hover{background:var(--amber);height:3px}
+  .tick::after{
+    content:attr(data-label);
+    position:absolute;right:16px;top:50%;
+    transform:translate(6px,-50%) scale(.94);
+    padding:6px 12px;border-radius:9px;white-space:nowrap;
+    font-size:11.5px;color:rgba(244,245,247,.95);
+    background:linear-gradient(180deg,rgba(10,11,13,.94),rgba(20,21,26,.96));
+    border:.7px solid rgba(255,255,255,.12);
+    box-shadow:0 10px 26px rgba(0,0,0,.45);
+    opacity:0;pointer-events:none;
+    transition:all .28s var(--ease);
+  }
+  .tick:hover::after{opacity:1;transform:translate(0,-50%) scale(1)}
+
+  /* ============ 02 卡片堆 ============ */
+  .deck{position:absolute;left:60px;top:50%;transform:translateY(-50%);width:330px;height:210px;cursor:pointer}
+  .card{
+    position:absolute;left:0;width:320px;height:46px;border-radius:11px;
+    display:flex;align-items:center;padding:0 18px;
+    transform-origin:left center;
+    transition:transform .38s var(--ease), box-shadow .3s var(--ease);
+    box-shadow:0 10px 26px rgba(0,0,0,.4);
+  }
+  .card:nth-child(1){top:0;  transform:rotate(-1.4deg)}
+  .card:nth-child(2){top:38px;transform:rotate(-.7deg) translateX(3px)}
+  .card:nth-child(3){top:76px;transform:rotate(.2deg) translateX(6px)}
+  .card:nth-child(4){top:114px;transform:rotate(1deg) translateX(9px)}
+  .card:nth-child(5){top:152px;transform:rotate(1.8deg) translateX(12px)}
+  .deck .card:hover{
+    transform:rotate(0) translateX(26px) scale(1.02);
+    z-index:9;box-shadow:0 18px 40px rgba(0,0,0,.55);
+    background:linear-gradient(180deg,rgba(16,17,20,.92),rgba(26,27,32,.95));
+  }
+  .deck .card .t{font-size:12.5px}
+  .deck .card .c{font-family:var(--mono);font-size:10.5px;margin-left:auto;color:rgba(244,245,247,.34)}
+  .deck .card .dot{width:3px;height:16px;border-radius:2px;margin-right:11px;background:linear-gradient(180deg,#F2C98A,rgba(233,184,114,.1))}
+
+  /* ============ 03 环 ============ */
+  .halo{position:absolute;left:170px;top:50%;transform:translate(-50%,-50%);width:64px;height:64px}
+  .orb{
+    position:absolute;inset:0;border-radius:50%;cursor:pointer;
+    display:grid;place-items:center;
+    transition:transform .4s var(--ease),box-shadow .4s var(--ease);
+    box-shadow:0 12px 30px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.18);
+  }
+  .orb span{width:22px;height:2px;border-radius:1px;background:rgba(244,245,247,.8);
+    box-shadow:0 -7px 0 rgba(244,245,247,.8), 0 7px 0 rgba(244,245,247,.8)}
+  .halo:hover .orb{transform:scale(1.06);box-shadow:0 16px 40px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.24)}
+  .sat{
+    position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;
+    border-radius:50%;display:grid;place-items:center;cursor:pointer;
+    font-size:10px;letter-spacing:.2px;color:rgba(244,245,247,.92);
+    transform:rotate(var(--a)) translateX(0) rotate(calc(-1 * var(--a))) scale(.2);
+    opacity:0;
+    transition:transform .5s var(--ease), opacity .35s var(--ease);
+    transition-delay:calc(var(--i) * 26ms);
+  }
+  .halo:hover .sat{
+    transform:rotate(var(--a)) translateX(150px) rotate(calc(-1 * var(--a))) scale(1);
+    opacity:1;
+  }
+  .sat:hover{background:linear-gradient(180deg,rgba(233,184,114,.22),rgba(20,21,26,.94))!important}
+
+  /* ============ 04 磁吸底座 ============ */
+  .dock{
+    position:absolute;left:50%;bottom:44px;transform:translateX(-50%);
+    display:flex;align-items:flex-end;gap:12px;padding:10px 16px;border-radius:20px;
+  }
+  .slot{
+    width:34px;height:34px;border-radius:12px;cursor:pointer;
+    display:grid;place-items:center;
+    font-family:var(--mono);font-size:11px;color:rgba(244,245,247,.55);
+    background:rgba(255,255,255,.045);
+    transition:all .28s var(--ease);
+  }
+  .slot:hover{
+    transform:translateY(-14px) scale(1.5);
+    color:#0B0C0E;
+    background:linear-gradient(180deg,#F4D3A0,#E9B872);
+    box-shadow:0 12px 26px rgba(0,0,0,.45);
+    margin:0 12px;
+  }
+  .slot:hover ~ .slot{margin-left:6px}
+
+  .note{max-width:660px;margin-top:15px;font-size:12.5px;line-height:1.9;color:rgba(244,245,247,.46)}
+  .note b{color:rgba(244,245,247,.8);font-weight:500}
+  .note i{font-style:normal;color:var(--amber)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>抽屉形态 · 4 个方向</h1>
+  <p>这次不谈描边和圆角，改「它怎么长在桌面上」。每一版都有实时动效，<em>把鼠标移上去看</em>——静态截图看不出「灵动」这件事。展开后的面板内容不变，只换入口的形态。</p>
+</header>
+
+<!-- 01 -->
+<section class="variant">
+  <div class="head"><span class="num">01</span><span class="name">边缘轨</span><span class="tag">Rail</span></div>
+  <div class="stage">
+    <div class="rail">
+      <div class="tick" data-label="文件夹 · 10"></div>
+      <div class="tick" data-label="AI · 15"></div>
+      <div class="tick" data-label="驱动优化 · 11"></div>
+      <div class="tick" data-label="游戏 · 23"></div>
+      <div class="tick" data-label="加速器 · 3"></div>
+      <div class="tick" data-label="媒体 · 8"></div>
+      <div class="tick" data-label="工具 · 10"></div>
+      <div class="tick" data-label="社交 · 6"></div>
+      <div class="tick" data-label="杂七杂八 · 4"></div>
+    </div>
+    <div class="hint">把鼠标移到右侧的刻度上</div>
+  </div>
+  <p class="note">九个抽屉压成屏幕边缘的一条<b>轨</b>，每个抽屉是一根 3px 刻度。轨道平时只有 14px 宽，鼠标靠近会自行变宽；悬停某根刻度，名字从小标签里滑出来。<i>桌面占用从 9 个胶囊变成一条线</i>，而且永远贴边不会挡东西。点击刻度 → 面板从边缘横向推入。</p>
+</section>
+
+<!-- 02 -->
+<section class="variant">
+  <div class="head"><span class="num">02</span><span class="name">卡片堆</span><span class="tag">Deck</span></div>
+  <div class="stage">
+    <div class="deck">
+      <div class="card glass"><span class="dot"></span><span class="t">文件夹</span><span class="c">10</span></div>
+      <div class="card glass"><span class="dot"></span><span class="t">AI</span><span class="c">15</span></div>
+      <div class="card glass"><span class="dot"></span><span class="t">驱动优化</span><span class="c">11</span></div>
+      <div class="card glass"><span class="dot"></span><span class="t">游戏</span><span class="c">23</span></div>
+      <div class="card glass"><span class="dot"></span><span class="t">加速器</span><span class="c">3</span></div>
+    </div>
+    <div class="hint">鼠标扫过卡片堆</div>
+  </div>
+  <p class="note">抽屉叠成<b>一摞微微旋转的卡片</b>，像手上的一副牌。悬停哪张，它就从牌堆里被抽出来、摆正、浮起。<i>动的是「抽取」这个动作本身</i>——比一排整齐的胶囊有生命感。点击抽出的卡片 → 展开成网格。九个抽屉可以全部叠成一摞，桌面只占一小块。</p>
+</section>
+
+<!-- 03 -->
+<section class="variant">
+  <div class="head"><span class="num">03</span><span class="name">环</span><span class="tag">Halo</span></div>
+  <div class="stage">
+    <div class="halo">
+      <div class="orb glass"><span></span></div>
+      <div class="sat glass" style="--a:-90deg;--i:0">文件夹</div>
+      <div class="sat glass" style="--a:-45deg;--i:1">AI</div>
+      <div class="sat glass" style="--a:0deg;--i:2">驱动</div>
+      <div class="sat glass" style="--a:45deg;--i:3">游戏</div>
+      <div class="sat glass" style="--a:90deg;--i:4">加速器</div>
+      <div class="sat glass" style="--a:135deg;--i:5">媒体</div>
+      <div class="sat glass" style="--a:180deg;--i:6">工具</div>
+      <div class="sat glass" style="--a:225deg;--i:7">社交</div>
+    </div>
+    <div class="hint">鼠标移到左侧那个圆球上</div>
+  </div>
+  <p class="note">桌面上只留一个<b>圆球</b>。鼠标靠近，九个抽屉以弧线依次弹出，带 26ms 的错峰延迟——<i>这是四版里最「活」的</i>。点某个方块直接展开对应抽屉。收起时反序缩回。代价：展开时要占一块圆形空地，九个抽屉靠得比较近。</p>
+</section>
+
+<!-- 04 -->
+<section class="variant">
+  <div class="head"><span class="num">04</span><span class="name">磁吸底座</span><span class="tag">Dock</span></div>
+  <div class="stage">
+    <div class="dock glass">
+      <div class="slot">文</div>
+      <div class="slot">AI</div>
+      <div class="slot">驱</div>
+      <div class="slot">游</div>
+      <div class="slot">加</div>
+      <div class="slot">媒</div>
+      <div class="slot">工</div>
+      <div class="slot">社</div>
+      <div class="slot">杂</div>
+    </div>
+    <div class="hint">鼠标沿着底座横向扫</div>
+  </div>
+  <p class="note">底部一条<b>底座</b>，抽屉是上面的方块。鼠标扫过时方块被<b>磁吸放大</b>、邻居让位——就是 macOS Dock 那种手感。<i>动作最轻快、最不需要学习</i>，因为所有人都摸过这个交互。点击放大的方块 → 面板从底座向上展开。</p>
+</section>
+
+</body>
+</html>

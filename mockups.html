@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>抽屉视觉方向 · 5 版</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#F4F5F7;
+    --amber:#E9B872;
+    --mono:'JetBrains Mono', ui-monospace, Consolas, monospace;
+    --sans:'Sora','Segoe UI Variable Display',-apple-system,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#08090B;
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    padding:64px 56px 96px;
+  }
+
+  /* ---------- 页头 ---------- */
+  header{max-width:860px;margin:0 auto 64px}
+  header h1{font-size:26px;font-weight:500;letter-spacing:-.4px}
+  header p{margin-top:12px;font-size:13.5px;line-height:1.75;color:rgba(244,245,247,.52);max-width:620px}
+
+  /* ---------- 版式骨架 ---------- */
+  .variant{max-width:860px;margin:0 auto 72px}
+  .head{display:flex;align-items:baseline;gap:14px;margin-bottom:18px}
+  .num{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.5px}
+  .name{font-size:15px;font-weight:500;letter-spacing:-.1px}
+  .tag{margin-left:auto;font-family:var(--mono);font-size:10px;color:rgba(244,245,247,.3)}
+
+  /* ---------- 舞台：模拟壁纸 ---------- */
+  .stage{
+    position:relative;
+    border-radius:18px;
+    padding:38px 44px;
+    overflow:hidden;
+    background:
+      radial-gradient(120% 90% at 88% 6%, rgba(233,160,72,.55) 0%, rgba(233,160,72,0) 46%),
+      radial-gradient(90% 80% at 12% 96%, rgba(28,66,74,.85) 0%, rgba(28,66,74,0) 60%),
+      linear-gradient(160deg,#141516 0%,#1B1D1F 38%,#0E1012 100%);
+    display:flex;align-items:center;gap:22px;flex-wrap:wrap;
+  }
+  .stage::after{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(60% 60% at 80% 10%, rgba(255,214,160,.18), transparent 70%);
+  }
+
+  /* ---------- 玻璃基底 ---------- */
+  .cap{
+    position:relative;z-index:1;
+    width:238px;height:46px;border-radius:23px;
+    display:flex;align-items:center;
+    backdrop-filter:blur(24px) saturate(115%);
+    -webkit-backdrop-filter:blur(24px) saturate(115%);
+    background:linear-gradient(180deg,rgba(10,11,13,.84) 0%,rgba(19,20,24,.90) 100%);
+    flex:none;
+  }
+  .t{font-size:12.5px;letter-spacing:.1px}
+  .c{font-family:var(--mono);font-size:11px;margin-left:auto}
+
+  /* 面板头部小样 */
+  .panel{
+    position:relative;z-index:1;
+    width:300px;height:62px;border-radius:16px;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:0 20px;
+    backdrop-filter:blur(24px) saturate(115%);
+    -webkit-backdrop-filter:blur(24px) saturate(115%);
+    background:linear-gradient(180deg,rgba(10,11,13,.86) 0%,rgba(19,20,24,.92) 100%);
+    flex:none;
+  }
+  .panel .pt{font-size:15px;font-weight:500;letter-spacing:-.2px}
+  .panel .ps{font-family:var(--mono);font-size:9.5px;margin-top:4px}
+
+  /* ---------- 01 静默 ---------- */
+  .v1{box-shadow:inset 0 0 0 .7px rgba(255,255,255,.10), 0 10px 28px rgba(0,0,0,.42)}
+  .v1 .t{margin-left:22px;color:rgba(244,245,247,.96)}
+  .v1 .c{margin-right:22px;color:rgba(244,245,247,.30)}
+  .v1b{box-shadow:inset 0 0 0 .7px rgba(255,255,255,.10), 0 10px 28px rgba(0,0,0,.42)}
+  .v1b .ps{color:rgba(244,245,247,.30)}
+
+  /* ---------- 02 锚点 ---------- */
+  .v2{box-shadow:inset 0 0 0 .7px rgba(255,255,255,.13), 0 10px 28px rgba(0,0,0,.42)}
+  .v2 .bar{width:3px;height:20px;border-radius:2px;margin-left:17px;flex:none;
+    background:linear-gradient(180deg,#F2C98A 0%,rgba(233,184,114,.12) 100%)}
+  .v2 .t{margin-left:12px;letter-spacing:.35px;color:rgba(244,245,247,.97)}
+  .v2 .c{margin-right:18px;padding:3px 7px;border-radius:7px;background:rgba(255,255,255,.06);
+    color:rgba(244,245,247,.52);font-size:10px}
+  .v2b{box-shadow:inset 0 0 0 .7px rgba(255,255,255,.13), 0 10px 28px rgba(0,0,0,.42)}
+  .v2b .ps{color:rgba(233,184,114,.55);letter-spacing:.6px}
+
+  /* ---------- 03 厚玻璃 ---------- */
+  .v3{
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.20),
+      inset 0 -1px 0 rgba(255,255,255,.04),
+      inset 0 0 0 .8px rgba(255,255,255,.09),
+      0 14px 34px rgba(0,0,0,.5);
+    background:
+      radial-gradient(120% 130% at 30% 0%, rgba(255,255,255,.07) 0%, rgba(255,255,255,0) 55%),
+      linear-gradient(180deg,rgba(10,11,13,.80) 0%,rgba(19,20,24,.88) 100%);
+  }
+  .v3 .slash{width:26px;height:2px;border-radius:1px;margin-left:18px;flex:none;
+    background:linear-gradient(90deg,#E9B872,rgba(233,184,114,.08))}
+  .v3 .t{margin-left:11px;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+  .v3 .c{margin-right:19px;color:rgba(244,245,247,.34);text-shadow:0 1px 2px rgba(0,0,0,.5)}
+  .v3b{box-shadow:inset 0 1px 0 rgba(255,255,255,.20),inset 0 0 0 .8px rgba(255,255,255,.09),0 14px 34px rgba(0,0,0,.5)}
+  .v3b .ps{color:rgba(244,245,247,.32)}
+
+  /* ---------- 04 色带 ---------- */
+  .v4{box-shadow:inset 0 0 0 .7px rgba(255,255,255,.11), 0 10px 28px rgba(0,0,0,.42);overflow:hidden}
+  .v4 .rb{position:absolute;left:0;top:0;bottom:0;width:3px}
+  .v4 .t{margin-left:19px}
+  .v4 .c{margin-right:18px;font-size:10.5px}
+  .v4b{box-shadow:inset 0 0 0 .7px rgba(255,255,255,.11), 0 10px 28px rgba(0,0,0,.42);overflow:hidden}
+  .v4b .rb{position:absolute;left:0;top:0;bottom:0;width:3px}
+
+  /* ---------- 05 标签 ---------- */
+  .v5{
+    height:38px;border-radius:19px;width:auto;padding:0 18px;
+    box-shadow:inset 0 0 0 .7px rgba(255,255,255,.09), 0 8px 22px rgba(0,0,0,.38);
+    background:linear-gradient(180deg,rgba(12,13,15,.80) 0%,rgba(20,21,25,.86) 100%);
+  }
+  .v5 .t{font-size:12px;margin-left:0}
+  .v5 .c{margin-left:9px;font-size:9px;color:rgba(244,245,247,.34);align-self:flex-start;margin-top:13px}
+  .v5b{width:230px;height:54px;border-radius:14px}
+  .v5b .ps{margin-top:3px}
+
+  /* ---------- 说明 ---------- */
+  .note{max-width:640px;margin-top:16px;font-size:12.5px;line-height:1.85;color:rgba(244,245,247,.48)}
+  .note b{color:rgba(244,245,247,.78);font-weight:500}
+  .note i{font-style:normal;color:var(--amber)}
+  .row{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+
+  @media (prefers-reduced-motion:no-preference){
+    .stage{transition:background-position .4s ease}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>抽屉视觉方向 · 5 版</h1>
+  <p>同一块玻璃，五种处理。尺寸是真实尺寸（胶囊 238×46），背景模拟你的暖色壁纸，用来判断文字在这种底色上能不能压住。挑一个编号，或者说「02 的计数、03 的厚度」这种混搭。</p>
+</header>
+
+<!-- 01 -->
+<section class="variant">
+  <div class="head"><span class="num">01</span><span class="name">静默</span><span class="tag">Quiet</span></div>
+  <div class="stage">
+    <div class="cap v1"><span class="t">游戏</span><span class="c">23</span></div>
+    <div class="panel v1b">
+      <div class="pt">游戏</div>
+      <div class="ps">23 项 · D:\Nook\游戏</div>
+    </div>
+  </div>
+  <p class="note">摘掉左侧强调条，<b>只留标题与计数</b>。描边压到 0.7px，计数透明度降到 30%。<i>最克制的一版</i>，玻璃本身撑住质感，不靠装饰。适合九个抽屉排成一列时——不会九个颜色条一起抢眼。</p>
+</section>
+
+<!-- 02 -->
+<section class="variant">
+  <div class="head"><span class="num">02</span><span class="name">锚点</span><span class="tag">Anchor</span></div>
+  <div class="stage">
+    <div class="cap v2"><span class="bar"></span><span class="t">游戏</span><span class="c">23</span></div>
+    <div class="panel v2b">
+      <div class="pt">游戏</div>
+      <div class="ps">23 项</div>
+    </div>
+  </div>
+  <p class="note">强调条从「实心色块」改成<b>顶亮底透的渐变竖条</b>，像一根刻度。标题字距放宽 0.35px，计数装进一枚极淡的小胶囊。<i>比现在更精致，但结构没变</i>——换的话视觉记忆成本最低。</p>
+</section>
+
+<!-- 03 -->
+<section class="variant">
+  <div class="head"><span class="num">03</span><span class="name">厚玻璃</span><span class="tag">Thick Glass</span></div>
+  <div class="stage">
+    <div class="cap v3"><span class="slash"></span><span class="t">游戏</span><span class="c">23</span></div>
+    <div class="panel v3b">
+      <div class="pt">游戏</div>
+      <div class="ps">23 项</div>
+    </div>
+  </div>
+  <p class="note">重点在<b>厚度</b>：内顶 1px 高光 + 内底 1px 反光 + 外描边，内部再压一层极淡的径向渐变。<i>最有物质感</i>，贴近 macOS 那种实心玻璃；代价是在明亮壁纸上容易显得偏灰。</p>
+</section>
+
+<!-- 04 -->
+<section class="variant">
+  <div class="head"><span class="num">04</span><span class="name">色带</span><span class="tag">Ribbon</span></div>
+  <div class="stage">
+    <div class="cap v4"><span class="rb" style="background:linear-gradient(180deg,#E2685C,#8E3A33)"></span><span class="t">游戏</span><span class="c" style="color:rgba(226,104,92,.55)">23</span></div>
+    <div class="cap v4"><span class="rb" style="background:linear-gradient(180deg,#E9B872,#8A6B3C)"></span><span class="t">工具</span><span class="c" style="color:rgba(233,184,114,.55)">10</span></div>
+    <div class="cap v4"><span class="rb" style="background:linear-gradient(180deg,#6FA79B,#33564F)"></span><span class="t">媒体</span><span class="c" style="color:rgba(111,167,155,.55)">8</span></div>
+    <div class="panel v4b">
+      <span class="rb" style="background:linear-gradient(180deg,#E2685C,#8E3A33)"></span>
+      <div class="pt" style="margin-left:14px">游戏</div>
+      <div class="ps" style="margin-left:14px">23 项</div>
+    </div>
+  </div>
+  <p class="note">左侧竖条<b>通高 3px</b>，每个抽屉可指定一个色相，计数用同色系的低饱和版本。<i>九个抽屉一眼可分</i>——但九个颜色同时出现，桌面会更热闹。需要你给每个抽屉配色。</p>
+</section>
+
+<!-- 05 -->
+<section class="variant">
+  <div class="head"><span class="num">05</span><span class="name">标签</span><span class="tag">Tag</span></div>
+  <div class="stage">
+    <div class="cap v5"><span class="t">游戏</span><span class="c">23</span></div>
+    <div class="cap v5"><span class="t">驱动优化</span><span class="c">11</span></div>
+    <div class="panel v5b v5">
+      <div class="pt">游戏</div>
+      <div class="ps">23 项</div>
+    </div>
+  </div>
+  <p class="note">高度压到 <b>38px</b>，宽度随标题自适应，圆角 19。计数变成标题右侧紧跟的<i>上标小字</i>。整体更轻、更省桌面，九个抽屉竖排也不会占太多高度。</p>
+</section>
+
+</body>
+</html>
