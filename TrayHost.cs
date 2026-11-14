@@ -15,6 +15,7 @@ namespace Nook
         private readonly WinForms.NotifyIcon _icon;
         private readonly ContextMenu _menu;
         private readonly Window _anchor;
+        private AccentWindow? _accentWin;
         private bool _disposed;
 
         public TrayHost(DrawerManager manager)
@@ -53,6 +54,16 @@ namespace Nook
             _icon.MouseUp += OnTrayMouseUp;
         }
 
+        /// <summary>主题色窗口单例：已开着就带到前台。</summary>
+        private void ShowAccentWindow()
+        {
+            if (_accentWin == null || !_accentWin.IsLoaded)
+                _accentWin = new AccentWindow(_manager);
+
+            _accentWin.Show();
+            _accentWin.Activate();
+        }
+
         private void OnTrayMouseUp(object? sender, WinForms.MouseEventArgs e)
         {
             if (e.Button == WinForms.MouseButtons.Left)
@@ -67,65 +78,6 @@ namespace Nook
                 _menu.Placement = PlacementMode.MousePoint;
                 _menu.IsOpen = true;
             }
-        }
-
-        private static readonly (string Name, string Hex)[] AccentPresets =
-        {
-            ("琥珀", "#E9B872"), ("珊瑚", "#E8836F"), ("落橙", "#F0A35E"),
-            ("草绿", "#9CCB86"), ("青碧", "#6FC2B0"), ("天蓝", "#7FA8D9"),
-            ("紫罗兰", "#A99BD6"), ("玫粉", "#D98CA6"), ("银白", "#C9CCD1"),
-        };
-
-        /// <summary>主题色子菜单：九个预设色板 + 系统取色器。</summary>
-        private MenuItem BuildAccentMenu()
-        {
-            var root = new MenuItem { Header = "主题色" };
-            var current = _manager.State.AccentColor;
-
-            foreach (var (name, hex) in AccentPresets)
-            {
-                var c = ParseHexOr(hex, App.AccentColor);
-                var item = new MenuItem { Header = name };
-
-                item.Icon = new System.Windows.Shapes.Rectangle
-                {
-                    Width = 15, Height = 15, RadiusX = 3, RadiusY = 3,
-                    Fill = new System.Windows.Media.SolidColorBrush(c),
-                    Stroke = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x40, 0xFF, 0xFF, 0xFF)),
-                    StrokeThickness = 1
-                };
-
-                var captured = hex;
-                item.Click += (_, _) => _manager.SetAccent(captured);
-                if (string.Equals(current, hex, StringComparison.OrdinalIgnoreCase))
-                    item.Header = name + "  ●";
-
-                root.Items.Add(item);
-            }
-
-            var custom = new MenuItem { Header = "自定义颜色…" };
-            custom.Click += (_, _) =>
-            {
-                using var dlg = new WinForms.ColorDialog
-                {
-                    FullOpen = true,
-                    Color = Drawing.Color.FromArgb(App.AccentColor.A, App.AccentColor.R, App.AccentColor.G, App.AccentColor.B)
-                };
-                if (dlg.ShowDialog() == WinForms.DialogResult.OK)
-                {
-                    var c = dlg.Color;
-                    _manager.SetAccent($"#{c.R:X2}{c.G:X2}{c.B:X2}");
-                }
-            };
-            root.Items.Add(custom);
-
-            return root;
-        }
-
-        private static System.Windows.Media.Color ParseHexOr(string hex, System.Windows.Media.Color fallback)
-        {
-            try { return (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex); }
-            catch { return fallback; }
         }
 
         public void Rebuild()
@@ -180,8 +132,9 @@ namespace Nook
             };
             _menu.Items.Add(autoRun);
 
-            var accentMenu = BuildAccentMenu();
-            _menu.Items.Add(accentMenu);
+            var accent = new MenuItem { Header = "主题色…" };
+            accent.Click += (_, _) => ShowAccentWindow();
+            _menu.Items.Add(accent);
 
             var closeOnLeave = new MenuItem
             {
