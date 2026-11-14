@@ -78,10 +78,19 @@ namespace Nook
             Name = System.IO.Path.GetFileName(path.TrimEnd(System.IO.Path.DirectorySeparatorChar));
             if (string.IsNullOrEmpty(Name)) Name = path;
 
-            string ext = System.IO.Path.GetExtension(Name);
-            if (ext.Equals(".lnk", StringComparison.OrdinalIgnoreCase)
-                || ext.Equals(".url", StringComparison.OrdinalIgnoreCase))
-                Name = System.IO.Path.GetFileNameWithoutExtension(Name);
+            // .lnk/.url/.exe 对辨认没有帮助，去掉后名字更容易一行放下。
+            // 可能叠了两层（快捷方式本身就叫 "xxx.exe.lnk"），所以循环剥。
+            for (int pass = 0; pass < 3; pass++)
+            {
+                string ext = System.IO.Path.GetExtension(Name);
+                if (Name.Length <= ext.Length) break;
+
+                if (ext.Equals(".lnk", StringComparison.OrdinalIgnoreCase)
+                    || ext.Equals(".url", StringComparison.OrdinalIgnoreCase)
+                    || ext.Equals(".exe", StringComparison.OrdinalIgnoreCase))
+                    Name = System.IO.Path.GetFileNameWithoutExtension(Name);
+                else break;
+            }
 
             IsMissing = !ShellItem.IsShellPath(path) && !File.Exists(path) && !Directory.Exists(path);
         }

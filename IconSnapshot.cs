@@ -47,7 +47,7 @@ namespace Nook
             }
         }
 
-        public static ImageSource? Load(string? pngPath)
+        public static ImageSource? Load(string? pngPath, int decodeTo = 128)
         {
             if (string.IsNullOrEmpty(pngPath) || !File.Exists(pngPath)) return null;
 
@@ -58,6 +58,8 @@ namespace Nook
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
                 bitmap.CreateOptions = BitmapCreateOptions.IgnoreImageCache;
                 bitmap.UriSource = new Uri(pngPath);
+                // 按显示尺寸解码，别把 256px 原图整张读进内存再缩
+                bitmap.DecodePixelWidth = decodeTo;
                 bitmap.EndInit();
                 bitmap.Freeze();
                 return bitmap;

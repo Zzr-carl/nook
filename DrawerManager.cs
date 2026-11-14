@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace Nook
@@ -32,6 +33,9 @@ namespace Nook
             Rail.Show();
 
             Tray?.Rebuild();
+
+            // 缺的图标快照在后台补齐，别等用户第一次展开时才去问 shell
+            ScheduleIconFill();
         }
 
         public void Save() => Store.Save(State);
@@ -96,6 +100,9 @@ namespace Nook
             Save();
             Rail?.Rebuild();
             Tray?.Rebuild();
+
+            // 缺的图标快照在后台补齐，别等用户第一次展开时才去问 shell
+            ScheduleIconFill();
         }
 
         public string? BackupTo(string path)
@@ -126,6 +133,9 @@ namespace Nook
 
             Rail?.Rebuild();
             Tray?.Rebuild();
+
+            // 缺的图标快照在后台补齐，别等用户第一次展开时才去问 shell
+            ScheduleIconFill();
         }
 
         public void OpenDrawer(DrawerData data) => Rail?.OpenFor(data);
@@ -155,6 +165,47 @@ namespace Nook
             Save();
         }
 
+        /// <summary>启动后补抓缺的图标快照：把 shell 查询从"每次展开"挪到"开机一次"。</summary>
+        public void ScheduleIconFill()
+        {
+            Task.Run(() =>
+            {
+                var pending = new List<(ItemData item, string drawerId)>();
+
+                foreach (var drawer in State.Drawers)
+                    foreach (var item in drawer.Items)
+                        if (string.IsNullOrEmpty(item.IconCache) || !System.IO.File.Exists(item.IconCache))
+                            pending.Add((item, drawer.Id));
+
+                if (pending.Count == 0) return;
+
+                var clock = System.Diagnostics.Stopwatch.StartNew();
+                int captured = 0;
+
+                foreach (var (item, drawerId) in pending)
+                {
+                    string? png = IconSnapshot.Capture(item.Path, drawerId);
+                    if (png == null) continue;
+
+                    var target = item;
+                    string path = png;
+                    Application.Current?.Dispatcher.Invoke(() => target.IconCache = path);
+                    captured++;
+                }
+
+                if (captured == 0) return;
+
+                Application.Current?.Dispatcher.Invoke(() =>
+                {
+                    IconMemory.Clear();
+                    Save();
+                    foreach (var w in _panels.Values) w.ReloadIcons();
+                });
+
+                Log.Write($"icon fill: {captured}/{pending.Count} 用时 {clock.ElapsedMilliseconds}ms");
+            });
+        }
+
         public void SnapshotAllIcons()
         {
             int captured = 0;
@@ -177,6 +228,7 @@ namespace Nook
             if (captured == 0) return;
 
             Log.Write($"icon snapshot (all): {captured}");
+            IconMemory.Clear();
             Save();
             foreach (var w in _panels.Values) w.ReloadIcons();
         }
@@ -204,6 +256,9 @@ namespace Nook
 
             foreach (var w in _panels.Values) w.ReloadIcons();
             Tray?.Rebuild();
+
+            // 缺的图标快照在后台补齐，别等用户第一次展开时才去问 shell
+            ScheduleIconFill();
         }
     }
 }

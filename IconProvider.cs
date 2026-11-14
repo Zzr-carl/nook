@@ -165,3 +165,32 @@ namespace Nook
         private static extern bool DestroyIcon(IntPtr hIcon);
     }
 }
+
+namespace Nook
+{
+    /// <summary>解码过的图标留在内存里，展开第二次起不再碰磁盘和 shell。</summary>
+    internal static class IconMemory
+    {
+        private static readonly Dictionary<string, ImageSource> Map = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly object Gate = new();
+
+        public static string KeyFor(string? snapshotPath, string itemPath) =>
+            snapshotPath is { Length: > 0 } ? "snap:" + snapshotPath : "item:" + itemPath;
+
+        public static ImageSource? Get(string key)
+        {
+            lock (Gate) return Map.TryGetValue(key, out var src) ? src : null;
+        }
+
+        public static void Put(string key, ImageSource? src)
+        {
+            if (src == null) return;
+            lock (Gate) Map[key] = src;
+        }
+
+        public static void Clear()
+        {
+            lock (Gate) Map.Clear();
+        }
+    }
+}

@@ -65,6 +65,9 @@ namespace Nook
 
             if (e.Args.Contains("--uicheck")) _ = UiCheckAsync();
 
+            int pf = Array.IndexOf(e.Args, "--perf");
+            if (pf >= 0 && pf + 1 < e.Args.Length) _ = PerfAsync(e.Args[pf + 1]);
+
             int ai = Array.IndexOf(e.Args, "--autostart");
             if (ai >= 0 && ai + 1 < e.Args.Length)
             {
@@ -122,6 +125,31 @@ namespace Nook
             { IsBackground = true, Name = "Nook.Activate" };
 
             thread.Start();
+        }
+
+        // 同一个进程里连续展开两次，比较"冷"和"热"的图标加载耗时
+        private async Task PerfAsync(string drawerName)
+        {
+            await Task.Delay(700);
+
+            var data = _manager?.State.Drawers.FirstOrDefault(d => d.Name == drawerName)
+                       ?? _manager?.State.Drawers.FirstOrDefault();
+            if (data == null) { Shutdown(); return; }
+
+            var window = _manager!.GetOrCreatePanel(data);
+            var box = SystemParameters.WorkArea;
+
+            await window.OpenPanelAsync(box.Left + box.Width / 2, box.Top + 15);
+            await Task.Delay(900);
+
+            window.ClosePanelNow();
+            await Task.Delay(300);
+
+            await window.OpenPanelAsync(box.Left + box.Width / 2, box.Top + 15);
+            await Task.Delay(900);
+
+            Log.Write("perf 完成");
+            Shutdown();
         }
 
         // 不靠鼠标，直接驱动"展开 → 锚定 → 收回"，把几何数据打到日志里

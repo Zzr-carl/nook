@@ -180,7 +180,6 @@ namespace Nook
             Top = -6000;
 
             ApplyTopmost();
-            LoadItems();
         }
 
         /// <summary>锚定的刻度中心：换图标大小后仍对齐同一根刻度。</summary>
@@ -235,6 +234,7 @@ namespace Nook
 
             var box = SystemParameters.WorkArea;
             _anchorX = centerX;
+            var openClock = System.Diagnostics.Stopwatch.StartNew();
 
             var (w, h) = MeasurePanel();
 
@@ -251,7 +251,10 @@ namespace Nook
             Show();
             UpdateLayout();
             await Task.Delay(28);
+
+            var clock2 = System.Diagnostics.Stopwatch.StartNew();
             CaptureBackdropNow();
+            Log.Write($"backdrop: {_data.Name} {clock2.ElapsedMilliseconds}ms");
 
             _expanded = true;
             _opening = false;
@@ -259,14 +262,21 @@ namespace Nook
             ExpandedLayer.Visibility = Visibility.Visible;
             ExpandedLayer.Opacity = 1;
             ExpandedLayer.RenderTransform = null;
-            LoadItems();
+            LoadItems(loadIcons: false);
 
             var geo = new RectangleGeometry(new Rect(0, 0, w, 0));
             RootGrid.Clip = geo;
 
+            // 图标和动画并行：命中缓存的已经贴上了，未命中的在这 300ms 里补完
+            var icons = LoadIconsAsync();
+
             await Task.WhenAll(
                 AnimateClip(geo, new Rect(0, 0, w, h), 300),
                 Animate(RootGrid, UIElement.OpacityProperty, 1, 170));
+
+            await icons;
+
+            Log.Write($"open: {_data.Name} 动画 {openClock.ElapsedMilliseconds}ms");
 
             RootGrid.Clip = null;
             WindowStyleHelper.SetTopmost(this);
@@ -399,7 +409,7 @@ namespace Nook
 
         // ==================== 内容 ====================
 
-        private void LoadItems()
+        private void LoadItems(bool loadIcons = true)
         {
             MigrateDesktopEntries();
 
@@ -408,15 +418,21 @@ namespace Nook
             foreach (var item in _data.Items)
             {
                 if (string.IsNullOrWhiteSpace(item.Path)) continue;
-                _items.Add(new DrawerItem(item.Path, iconCache: item.IconCache,
-                    metrics: CardMetrics.For(_data.IconSize)));
+
+                var card = new DrawerItem(item.Path, iconCache: item.IconCache,
+                    metrics: CardMetrics.For(_data.IconSize));
+
+                var cached = IconMemory.Get(IconMemory.KeyFor(item.IconCache, item.Path));
+                if (cached != null) card.Icon = cached;
+
+                _items.Add(card);
             }
 
             _addTile.MetricsOverride(CardMetrics.For(_data.IconSize));
             _items.Add(_addTile);
 
             UpdateLabels();
-            _ = LoadIconsAsync();
+            if (loadIcons) _ = LoadIconsAsync();
         }
 
         /// <summary>
@@ -453,6 +469,9 @@ namespace Nook
             var snapshot = _items.Where(i => !i.IsAddTile).ToArray();
             if (snapshot.Length == 0) return;
 
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            int misses = 0;
+
             await Task.Run(() =>
             {
                 var batch = new List<(DrawerItem item, ImageSource src)>(8);
@@ -474,15 +493,24 @@ namespace Nook
                     ImageSource? src;
                     try
                     {
-                        // 1) 搬走前的快照最可靠；2) 解析快捷方式真实图标源；3) 退回 shell
-                        src = IconSnapshot.Load(item.IconCachePath);
+                        string key = IconMemory.KeyFor(item.IconCachePath, item.Path);
+                        src = IconMemory.Get(key);
 
                         if (src == null)
                         {
-                            string? source = ShortcutIcon.ResolveSource(item.Path);
-                            src = source != null
-                                ? IconProvider.Get(source) ?? IconProvider.Get(item.Path)
-                                : IconProvider.Get(item.Path);
+                            // 1) 搬走前的快照最可靠；2) 解析快捷方式真实图标源；3) 退回 shell
+                            src = IconSnapshot.Load(item.IconCachePath);
+
+                            if (src == null)
+                            {
+                                misses++;
+                                string? source = ShortcutIcon.ResolveSource(item.Path);
+                                src = source != null
+                                    ? IconProvider.Get(source) ?? IconProvider.Get(item.Path)
+                                    : IconProvider.Get(item.Path);
+                            }
+
+                            IconMemory.Put(key, src);
                         }
                     }
                     catch { src = null; }
@@ -493,6 +521,9 @@ namespace Nook
 
                 Flush();
             });
+
+            clock.Stop();
+            Log.Write($"icons: {_data.Name} {snapshot.Length} 个 用时 {clock.ElapsedMilliseconds}ms 未命中 {misses}");
         }
 
         private void UpdateLabels()
@@ -632,6 +663,7 @@ namespace Nook
 
             IconSnapshot.Delete(entry.IconCache);
             entry.IconCache = IconSnapshot.Capture(entry.Path, _data.Id);
+            IconMemory.Clear();
 
             Log.Write($"icon recaptured: {entry.Path}");
             _manager.Save();
@@ -931,23 +963,68 @@ namespace Nook
         {
             if (item.IsAddTile) { AddViaDialog(); return; }
 
+            string path = item.Path;
+            string ext = Path.GetExtension(path).ToLowerInvariant();
+
             try
             {
-                if (ShellItem.IsShellPath(item.Path))
+                if (ShellItem.IsShellPath(path))
                 {
-                    ShellItem.Open(item.Path);
+                    ShellItem.Open(path);
+                    Log.Write($"open shell: {item.Name} | {path}");
                 }
                 else
                 {
-                    Process.Start(new ProcessStartInfo(item.Path) { UseShellExecute = true });
+                    var proc = Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+                    Log.Write($"open: {item.Name} | {ext} | " +
+                              (proc != null ? $"pid={proc.Id}" : "无进程句柄"));
+
+                    // 有的程序会"启动即退出"（缺依赖、需要提权被拒、重复实例），这里抓出来
+                    if (proc != null) _ = WatchLaunch(proc, item.Name, path);
                 }
 
                 _ = CollapseAsync();
             }
             catch (Exception ex)
             {
-                Log.Write("open failed: " + ex.Message);
+                Log.Write($"open FAILED: {item.Name} | {ext} | {path} | {ex.GetType().Name}: {ex.Message}");
+                TryFallback(item, path, ext);
             }
+        }
+
+        /// <summary>启动失败时，退回原始位置再试一次（搬动可能弄坏了相对路径）。</summary>
+        private void TryFallback(DrawerItem item, string path, string ext)
+        {
+            var entry = _data.Items.FirstOrDefault(
+                i => string.Equals(i.Path, path, StringComparison.OrdinalIgnoreCase));
+
+            string? original = entry?.OriginalPath;
+            if (string.IsNullOrEmpty(original) || !File.Exists(original)) return;
+
+            try
+            {
+                Process.Start(new ProcessStartInfo(original) { UseShellExecute = true });
+                Log.Write($"open fallback OK: {item.Name} | {original}");
+            }
+            catch (Exception ex)
+            {
+                Log.Write($"open fallback FAILED: {item.Name} | {original} | {ex.Message}");
+            }
+        }
+
+        private static async Task WatchLaunch(Process proc, string name, string path)
+        {
+            try
+            {
+                bool exited = await Task.Run(() => proc.WaitForExit(1800));
+                if (!exited) return;
+
+                int code = -1;
+                try { code = proc.ExitCode; } catch { }
+
+                Log.Write($"open 秒退: {name} | code={code} | {path}");
+            }
+            catch { }
         }
 
         private static void RevealItem(DrawerItem item)
