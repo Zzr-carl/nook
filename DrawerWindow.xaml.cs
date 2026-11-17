@@ -21,6 +21,10 @@ namespace Nook
     {
         private const string ItemFormat = "NookItemIndex";
 
+        /// <summary>跨抽屉拖动时，让目标知道条目从哪来、是哪个。</summary>
+        public const string DragDrawerFormat = "NookDragDrawerId";
+        public const string DragPathFormat = "NookDragItemPath";
+
         private readonly ObservableCollection<DrawerItem> _items = new();
         private readonly DrawerItem _addTile = new("", isAddTile: true);
         private readonly DrawerData _data;
@@ -988,6 +992,8 @@ namespace Nook
 
             var data = new DataObject();
             data.SetData(ItemFormat, index);
+            data.SetData(DragDrawerFormat, _data.Id);
+            data.SetData(DragPathFormat, item.Path);
             data.SetData(DataFormats.FileDrop, new[] { item.Path });
 
             DragDropEffects effect = DragDropEffects.None;
@@ -1005,7 +1011,8 @@ namespace Nook
             }
 
             // 拖到抽屉外面并且真的被"移动"走了 → 条目离开抽屉，保持一一对应
-            if (!_internalDrop && effect == DragDropEffects.Move)
+            if (!_internalDrop && effect == DragDropEffects.Move &&
+                !_manager.WasMovedToAnotherDrawer(item.Path))
             {
                 var tracked = _data.Items.FirstOrDefault(
                     i => string.Equals(i.Path, item.Path, StringComparison.OrdinalIgnoreCase));
@@ -1221,6 +1228,7 @@ namespace Nook
             if (e.Data.GetDataPresent(ItemFormat))
             {
                 _internalDrop = true;
+                e.Effects = DragDropEffects.Move;
                 InsertMarker.Visibility = Visibility.Collapsed;
 
                 if (e.Data.GetData(ItemFormat) is int fromIndex)

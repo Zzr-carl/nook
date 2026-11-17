@@ -36,6 +36,7 @@ namespace Nook
         private DateTime _awaySince = DateTime.MinValue;
         private DateTime _leaveSince = DateTime.MinValue;
         private DateTime _peekFrom = DateTime.MinValue;
+        private bool _externalDrag;
         private bool _leftWasDown;
         private DateTime _graceUntil = DateTime.MinValue;
 
@@ -71,6 +72,11 @@ namespace Nook
             _poll.Tick += (_, _) => Poll();
 
             Loaded += (_, _) => { Rebuild(); PlaceHidden(); _poll.Start(); Reveal(); };
+
+            AllowDrop = true;
+            DragOver += Rail_DragOver;
+            DragLeave += Rail_DragLeave;
+            Drop += Rail_Drop;
 
             MouseMove += Rail_MouseMove;
             MouseLeftButtonUp += Rail_MouseUp;
@@ -250,6 +256,12 @@ namespace Nook
 
             if (occ == Occlusion.Maximized) _peekFrom = DateTime.MinValue;
 
+            if (_externalDrag)
+            {
+                _leaveSince = DateTime.MinValue;
+                return;
+            }
+
             if (_pressed || _dragging)
             {
                 // 松手事件万一丢了，不能把状态卡死在这里。
@@ -416,6 +428,62 @@ namespace Nook
             _open?.ClosePanelNow();
             _open = null;
             _openIndex = -1;
+        }
+
+        // ==================== 跨抽屉拖放 ====================
+
+        private void Rail_DragOver(object sender, DragEventArgs e)
+        {
+            bool ours = e.Data.GetDataPresent(DrawerWindow.DragDrawerFormat)
+                     && e.Data.GetDataPresent(DrawerWindow.DragPathFormat);
+
+            if (!ours)
+            {
+                e.Effects = DragDropEffects.None;
+                return;
+            }
+
+            e.Effects = DragDropEffects.Move;
+
+            var p = e.GetPosition(this);
+            int target = IndexAt(Left + p.X);
+
+            if (target < 0 || string.Equals(e.Data.GetData(DrawerWindow.DragDrawerFormat) as string,
+                    _manager.State.Drawers[target].Id, StringComparison.Ordinal))
+            {
+                DragMarker.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            _externalDrag = true;
+            HideHint();
+            ShowMarker(target);
+        }
+
+        private void Rail_DragLeave(object sender, DragEventArgs e)
+        {
+            _externalDrag = false;
+            DragMarker.Visibility = Visibility.Collapsed;
+        }
+
+        private void Rail_Drop(object sender, DragEventArgs e)
+        {
+            _externalDrag = false;
+            DragMarker.Visibility = Visibility.Collapsed;
+
+            if (e.Data.GetData(DrawerWindow.DragDrawerFormat) is not string fromId ||
+                e.Data.GetData(DrawerWindow.DragPathFormat) is not string path)
+                return;
+
+            int target = IndexAt(Left + e.GetPosition(this).X);
+            if (target < 0 || target >= _manager.State.Drawers.Count) return;
+
+            var to = _manager.State.Drawers[target];
+            if (string.Equals(fromId, to.Id, StringComparison.Ordinal)) return;
+
+            _manager.MoveItemToDrawer(fromId, path, to.Id);
+            e.Effects = DragDropEffects.Move;
+            e.Handled = true;
         }
 
         private void ShowHint(int index)

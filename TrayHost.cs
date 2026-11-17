@@ -14,7 +14,7 @@ namespace Nook
         private readonly DrawerManager _manager;
         private readonly WinForms.NotifyIcon _icon;
         private readonly ContextMenu _menu;
-        private readonly Window _anchor;
+        private Window? _anchor;
         private AccentWindow? _accentWin;
         private bool _disposed;
 
@@ -28,8 +28,21 @@ namespace Nook
             };
             _menu.Opened += (_, _) => Rebuild();
 
-            // 没有父级的 ContextMenu 用 IsOpen 弹出时，二级子菜单打不开（拿不到菜单焦点）。
-            // 挂一个藏在屏幕外的锚点窗口当宿主，子菜单就正常了。
+            _icon = new WinForms.NotifyIcon
+            {
+                Icon = BuildIcon(),
+                Visible = true,
+                Text = "Nook"
+            };
+            _icon.MouseUp += OnTrayMouseUp;
+        }
+
+        /// <summary>菜单第一次打开时才建锚点窗口——开机时省下 300ms。</summary>
+        private void EnsureAnchor()
+        {
+            if (_anchor != null) return;
+
+            // 没有父级的 ContextMenu 用 IsOpen 弹出时，二级子菜单打不开（拿不到菜单焦点）
             _anchor = new Window
             {
                 Width = 1,
@@ -44,14 +57,6 @@ namespace Nook
             };
             _anchor.Show();
             _menu.PlacementTarget = _anchor;
-
-            _icon = new WinForms.NotifyIcon
-            {
-                Icon = BuildIcon(),
-                Visible = true,
-                Text = "Nook"
-            };
-            _icon.MouseUp += OnTrayMouseUp;
         }
 
         /// <summary>主题色窗口单例：已开着就带到前台。</summary>
@@ -75,6 +80,7 @@ namespace Nook
             if (e.Button == WinForms.MouseButtons.Right)
             {
                 Rebuild();
+                EnsureAnchor();
                 _menu.Placement = PlacementMode.MousePoint;
                 _menu.IsOpen = true;
             }

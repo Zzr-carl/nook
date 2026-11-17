@@ -20,7 +20,9 @@ namespace Nook
 
         public void Start()
         {
+            var c = System.Diagnostics.Stopwatch.StartNew();
             State = Store.Load();
+            Log.Write($"boot: 读配置 {c.ElapsedMilliseconds}ms");
             App.HoverToOpen = State.HoverToOpen;
             App.ApplyAccent(State.AccentColor);
 
@@ -31,12 +33,53 @@ namespace Nook
             }
 
             Rail = new RailWindow(this);
+            Log.Write($"boot: 轨道构造 {c.ElapsedMilliseconds}ms");
             Rail.Show();
+            Log.Write($"boot: 轨道显示 {c.ElapsedMilliseconds}ms");
 
             Tray?.Rebuild();
+            Log.Write($"boot: 托盘菜单 {c.ElapsedMilliseconds}ms");
 
             // 缺的图标快照在后台补齐，别等用户第一次展开时才去问 shell
             ScheduleIconFill();
+            Log.Write($"boot: 启动完成 {c.ElapsedMilliseconds}ms");
+        }
+
+        /// <summary>刚被挪去别的抽屉的条目，源面板的"拖出即移除"要跳过它。</summary>
+        private readonly Dictionary<string, DateTime> _justMoved = new(StringComparer.OrdinalIgnoreCase);
+
+        public bool WasMovedToAnotherDrawer(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+
+            foreach (var (key, at) in _justMoved.ToArray())
+                if ((DateTime.Now - at).TotalSeconds > 5) _justMoved.Remove(key);
+
+            return _justMoved.ContainsKey(path);
+        }
+
+        /// <summary>把一个条目从源抽屉挪到目标抽屉。文件本身不动，只改归属。</summary>
+        public void MoveItemToDrawer(string sourceId, string path, string targetId)
+        {
+            if (string.IsNullOrEmpty(path) || sourceId == targetId) return;
+
+            var source = State.Drawers.FirstOrDefault(d => d.Id == sourceId);
+            var target = State.Drawers.FirstOrDefault(d => d.Id == targetId);
+            if (source == null || target == null) return;
+
+            var item = source.Items.FirstOrDefault(
+                i => string.Equals(i.Path, path, StringComparison.OrdinalIgnoreCase));
+            if (item == null) return;
+
+            source.Items.Remove(item);
+            target.Items.Add(item);
+            _justMoved[item.Path] = DateTime.Now;
+            Save();
+
+            if (_panels.TryGetValue(sourceId, out var from)) from.ReloadIcons();
+            if (_panels.TryGetValue(targetId, out var to)) to.ReloadIcons();
+
+            Log.Write($"moved to drawer: {item.Path} → {target.Name}");
         }
 
         public void Save() => Store.Save(State);

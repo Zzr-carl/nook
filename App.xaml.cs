@@ -56,6 +56,8 @@ namespace Nook
 
         protected override void OnStartup(StartupEventArgs e)
         {
+            var boot = System.Diagnostics.Stopwatch.StartNew();
+            Log.Write("boot: 进入 OnStartup");
             _mutex = new Mutex(true, "Nook.SingleInstance.v1", out bool isFirst);
             if (!isFirst)
             {
@@ -78,13 +80,19 @@ namespace Nook
             ListenForActivate();
 
             base.OnStartup(e);
+            Log.Write($"boot: base.OnStartup 完成 {boot.ElapsedMilliseconds}ms");
 
             Log.Write("=== start ===");
 
             _manager = new DrawerManager();
+            Log.Write($"boot: Manager 构造 {boot.ElapsedMilliseconds}ms");
+
             _tray = new TrayHost(_manager);
             _manager.Tray = _tray;
+            Log.Write($"boot: 托盘就绪 {boot.ElapsedMilliseconds}ms");
+
             _manager.Start();
+            Log.Write($"boot: Start 完成 {boot.ElapsedMilliseconds}ms");
 
             int idx = Array.IndexOf(e.Args, "--capture");
             if (idx >= 0)

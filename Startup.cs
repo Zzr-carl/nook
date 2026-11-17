@@ -1,13 +1,13 @@
 using System;
-using Microsoft.Win32;
+using System.Reflection;
+using System.Security.Principal;
 
 namespace Nook
 {
-    /// <summary>开机自启：只写当前用户的 Run 项，不动系统级设置，也不需要管理员权限。</summary>
+    /// <summary>开机自启：登录时启动的计划任务，绕开 Windows 对启动应用的延迟排队。</summary>
     internal static class Startup
     {
-        private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
-        private const string ValueName = "Nook";
+        private const string TaskName = "Nook";
 
         public static bool IsEnabled
         {
@@ -15,8 +15,11 @@ namespace Nook
             {
                 try
                 {
-                    using var key = Registry.CurrentUser.OpenSubKey(RunKey);
-                    return key?.GetValue(ValueName) is string s && s.Length > 0;
+                    var folder = GetTaskFolder();
+                    if (folder == null) return false;
+                    folder.GetType().InvokeMember("GetTask",
+                        BindingFlags.InvokeMethod, null, folder, new object[] { TaskName });
+                    return true;
                 }
                 catch { return false; }
             }
@@ -26,24 +29,23 @@ namespace Nook
         {
             try
             {
-                using var key = Registry.CurrentUser.OpenSubKey(RunKey, writable: true)
-                                ?? Registry.CurrentUser.CreateSubKey(RunKey);
-                if (key == null) return false;
+                var folder = GetTaskFolder();
+                if (folder == null) return false;
 
                 if (on)
                 {
                     string exe = Environment.ProcessPath ?? "";
                     if (exe.Length == 0) return false;
-
-                    key.SetValue(ValueName, "\"" + exe + "\"");
-                    Log.Write("autostart on: " + exe);
+                    folder.GetType().InvokeMember("RegisterTask", BindingFlags.InvokeMethod, null,
+                        folder, new object[] { TaskName, TaskXml(exe), 6, null, null, 3 });
                 }
                 else
                 {
-                    key.DeleteValue(ValueName, throwOnMissingValue: false);
-                    Log.Write("autostart off");
+                    folder.GetType().InvokeMember("DeleteTask", BindingFlags.InvokeMethod, null,
+                        folder, new object[] { TaskName, 0 });
                 }
 
+                Log.Write($"autostart {(on ? "on" : "off")}: ok");
                 return true;
             }
             catch (Exception ex)
@@ -51,6 +53,40 @@ namespace Nook
                 Log.Write("autostart failed: " + ex.Message);
                 return false;
             }
+        }
+
+        private static object? GetTaskFolder()
+        {
+            var type = Type.GetTypeFromProgID("Schedule.Service");
+            if (type == null) return null;
+
+            var svc = Activator.CreateInstance(type);
+            if (svc == null) return null;
+
+            svc.GetType().InvokeMember("Connect", BindingFlags.InvokeMethod, null, svc, null);
+            return svc.GetType().InvokeMember("GetFolder", BindingFlags.InvokeMethod, null,
+                svc, new object[] { "\\" });
+        }
+
+        private static string TaskXml(string exe)
+        {
+            var who = WindowsIdentity.GetCurrent();
+            string sid = who.User?.Value ?? "";
+            string user = who.Name;
+
+            return "<?xml version=\"1.0\" encoding=\"UTF-16\"?>" +
+                "<Task version=\"1.3\" xmlns=\"http://schemas.microsoft.com/windows/2004/02/mit/task\">" +
+                "<RegistrationInfo><Description>Nook 开机自启</Description><URI>\\Nook</URI></RegistrationInfo>" +
+                $"<Principals><Principal id=\"Author\"><UserId>{sid}</UserId>" +
+                "<LogonType>InteractiveToken</LogonType></Principal></Principals>" +
+                "<Settings><DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>" +
+                "<StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>" +
+                "<ExecutionTimeLimit>PT0S</ExecutionTimeLimit>" +
+                "<MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>" +
+                "<StartWhenAvailable>true</StartWhenAvailable></Settings>" +
+                $"<Triggers><LogonTrigger><UserId>{user}</UserId></LogonTrigger></Triggers>" +
+                $"<Actions Context=\"Author\"><Exec><Command>{exe}</Command></Exec></Actions>" +
+                "</Task>";
         }
     }
 }
