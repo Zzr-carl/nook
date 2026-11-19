@@ -37,6 +37,9 @@ namespace Nook
         private DateTime _leaveSince = DateTime.MinValue;
         private DateTime _peekFrom = DateTime.MinValue;
         private bool _externalDrag;
+
+        /// <summary>收起后短暂别再响应顶边唤出，否则滑出动画里会被再次叫出，来回抽。</summary>
+        private DateTime _suppressPeekUntil = DateTime.MinValue;
         private bool _leftWasDown;
         private DateTime _graceUntil = DateTime.MinValue;
 
@@ -221,6 +224,9 @@ namespace Nook
 
         private const int PeekDwellMs = 80;
 
+        /// <summary>最大化时：光标在这个顶部带内就一直展开，不按动画中的轨道位置判断。</summary>
+        private const double TopZoneHeight = 44;
+
         private void Poll()
         {
             var occ = _fullscreen.Mode;
@@ -238,6 +244,9 @@ namespace Nook
             // 最大化：只有鼠标贴着最顶边停一下才临时冒出来
             if (occ == Occlusion.Maximized && !_revealed)
             {
+                // 刚收起还在滑出动画里，别又把它叫出来
+                if (DateTime.Now < _suppressPeekUntil) return;
+
                 var q = CursorDip();
 
                 if (q.Y <= 2)
@@ -288,11 +297,13 @@ namespace Nook
             if (overRail || overPanel) _leaveSince = DateTime.MinValue;
             else if (_leaveSince == DateTime.MinValue) _leaveSince = DateTime.Now;
 
-            // 最大化时是"临时叫出来"的，人一走就收，别赖在别人标题栏上
-            if (occ == Occlusion.Maximized && !overRail && !overPanel &&
+            // 最大化时：光标还在顶部带（含标题栏区域）就一直展开，别跟着动画位置抖。
+            // 只有真正往下离开顶部带，才收起。
+            if (occ == Occlusion.Maximized && p.Y > TopZoneHeight && !overPanel &&
                 _leaveSince != DateTime.MinValue &&
                 (DateTime.Now - _leaveSince).TotalMilliseconds >= 280)
             {
+                _suppressPeekUntil = DateTime.Now.AddMilliseconds(280);
                 HideRail(true);
                 HideHint();
                 ClosePanelNow();
