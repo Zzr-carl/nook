@@ -41,6 +41,8 @@ namespace Nook
         /// <summary>收起后短暂别再响应顶边唤出，否则滑出动画里会被再次叫出，来回抽。</summary>
         private DateTime _suppressPeekUntil = DateTime.MinValue;
         private bool _leftWasDown;
+        private System.Windows.Point _outsidePressAt;
+        private DateTime _outsidePressTime = DateTime.MinValue;
         private DateTime _graceUntil = DateTime.MinValue;
 
         private DrawerWindow? _open;
@@ -330,23 +332,43 @@ namespace Nook
                 OpenIndex(index);
             }
 
+            bool leftDown = (Native.GetAsyncKeyState(0x01) & 0x8000) != 0;
+
+            // 按下瞬间记个起点：用来区分"点一下"和"按住拖东西"
+            if (leftDown && !_leftWasDown)
+            {
+                _outsidePressAt = CursorDip();
+                _outsidePressTime = DateTime.Now;
+            }
+
+            bool draggingByMouse = leftDown &&
+                (DateTime.Now - _outsidePressTime).TotalMilliseconds > 60 &&
+                (Math.Abs(CursorDip().X - _outsidePressAt.X) > 4 ||
+                 Math.Abs(CursorDip().Y - _outsidePressAt.Y) > 4);
+
             if (CloseOnLeave && _open != null && _leaveSince != DateTime.MinValue &&
                 (DateTime.Now - _leaveSince).TotalMilliseconds >= AwayCloseMs &&
-                DateTime.Now >= _graceUntil && !_open.IsPinned)
+                DateTime.Now >= _graceUntil && !_open.IsPinned &&
+                !draggingByMouse)   // 正拖着东西就别收，不然拖到一半没落点
             {
                 ClosePanelNow();
                 Highlight(_hoverIndex);
             }
 
-            // 关掉"离开即收"后，改为监听左键：在面板和轨之外按下就收
-            bool leftDown = (Native.GetAsyncKeyState(0x01) & 0x8000) != 0;
-
-            if (!CloseOnLeave && _open != null && !_pressed && leftDown && !_leftWasDown &&
+            // 关掉"离开即收"后：松开鼠标时才判断——原地松开算点击外面，拖拽过就不算
+            if (!CloseOnLeave && _open != null && !_pressed && !leftDown && _leftWasDown &&
                 !overPanel && !overRail)
             {
-                Log.Write("click outside: 收起面板");
-                ClosePanelNow();
-                Highlight(_hoverIndex);
+                var q2 = CursorDip();
+                bool moved = Math.Abs(q2.X - _outsidePressAt.X) > 4 ||
+                             Math.Abs(q2.Y - _outsidePressAt.Y) > 4;
+
+                if (!moved)
+                {
+                    Log.Write("click outside: 收起面板");
+                    ClosePanelNow();
+                    Highlight(_hoverIndex);
+                }
             }
 
             _leftWasDown = leftDown;

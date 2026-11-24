@@ -40,6 +40,7 @@ namespace Nook
         private bool _pendingCollapse;
         private bool _draggingOut;
         private bool _internalDrop;
+        private string _lastDragFormats = "";
         private DateTime _dragEndedAt = DateTime.MinValue;
         private DispatcherTimer? _glassWatch;
 
@@ -82,6 +83,9 @@ namespace Nook
 
             DragEnter += (_, e) =>
             {
+                try { Log.Write("dragenter: " + string.Join(" | ", e.Data.GetFormats())); }
+                catch (Exception ex) { Log.Write("dragenter log failed: " + ex.Message); }
+
                 // 有东西拖进来了，别收
                 _pendingCollapse = false;
                 _collapseWatch.Stop();
@@ -1142,6 +1146,17 @@ namespace Nook
 
         private void OnDragOver(object sender, DragEventArgs e)
         {
+            try
+            {
+                var fm = string.Join(" | ", e.Data.GetFormats());
+                if (fm != _lastDragFormats)
+                {
+                    _lastDragFormats = fm;
+                    Log.Write("dragover formats: " + fm);
+                }
+            }
+            catch (Exception ex) { Log.Write("dragover formats failed: " + ex.Message); }
+
             if (e.Data.GetDataPresent(ItemFormat))
             {
                 e.Effects = DragDropEffects.Move;
@@ -1221,6 +1236,9 @@ namespace Nook
 
         private void OnDrop(object sender, DragEventArgs e)
         {
+            try { Log.Write("drop begin: " + string.Join(" | ", e.Data.GetFormats())); }
+            catch { }
+
             DropHint.Visibility = Visibility.Collapsed;
             _pendingCollapse = false;
             _collapseWatch.Stop();
