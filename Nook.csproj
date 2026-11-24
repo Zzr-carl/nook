@@ -11,7 +11,7 @@
     <AssemblyName>Nook</AssemblyName>
     <RootNamespace>Nook</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.3.1</Version>
+    <Version>0.3.2</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <NoWarn>$(NoWarn);WFO0003</NoWarn>
