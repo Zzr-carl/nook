@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
+    <ApplicationIcon>Assets\nook.ico</ApplicationIcon>
     <TargetFramework>net9.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
@@ -20,6 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\nook.ico" />
     <Resource Include="Assets\Fonts\Sora.ttf" />
     <Resource Include="Assets\Fonts\JetBrainsMono-Regular.ttf" />
     <Resource Include="Assets\Fonts\JetBrainsMono-Medium.ttf" />

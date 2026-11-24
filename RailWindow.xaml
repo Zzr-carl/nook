@@ -1,4 +1,5 @@
-<Window x:Class="Nook.RailWindow"
+<Window Icon="Assets/nook.ico"
+        x:Class="Nook.RailWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Nook"

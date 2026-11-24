@@ -250,20 +250,33 @@ namespace Nook
         private static Separator Separator() =>
             new() { Style = (Style)Application.Current.FindResource("NookSeparator") };
 
+        /// <summary>托盘图标：优先用打包进去的 nook.ico，挑跟系统小图标最接近的尺寸。</summary>
         private static Drawing.Icon BuildIcon()
         {
+            try
+            {
+                var uri = new Uri("pack://application:,,,/Assets/nook.ico");
+                using var stream = System.Windows.Application.GetResourceStream(uri)?.Stream;
+                if (stream != null)
+                {
+                    int want = WinForms.SystemInformation.SmallIconSize.Width;
+                    return new Drawing.Icon(stream, want, want);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Write("tray icon load failed: " + ex.Message);
+            }
+
+            // 兜底：临时画一个方块，总比没有图标强
             using var bmp = new Drawing.Bitmap(32, 32);
             using (var g = Drawing.Graphics.FromImage(bmp))
             {
                 g.SmoothingMode = Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 g.Clear(Drawing.Color.Transparent);
-
                 using var path = RoundedRect(new Drawing.Rectangle(3, 6, 26, 20), 6);
                 using var body = new Drawing.SolidBrush(Drawing.Color.FromArgb(255, 244, 245, 247));
                 g.FillPath(body, path);
-
-                using var slot = new Drawing.SolidBrush(Drawing.Color.FromArgb(255, 26, 27, 31));
-                g.FillRectangle(slot, 11, 15, 10, 2.6f);
             }
 
             return Drawing.Icon.FromHandle(bmp.GetHicon());
